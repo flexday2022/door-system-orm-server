@@ -1,14 +1,3589 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+model bs_admin {
+  context String @id
+  value   String @db.VarChar(255)
+}
+
+model column_settings {
+  report_id    Int
+  column_id    Int
+  column_order Int
+  show_column  Int     @db.TinyInt
+  reports      reports @relation(fields: [report_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_6fb726086fe8eee27a0b7bdab80")
+
+  @@id([report_id, column_id])
+}
+
+model dashboard_setting {
+  id               Int      @id @default(autoincrement())
+  user_id          String   @unique(map: "IDX_ds_user_id")
+  refresh_interval Int      @default(60)
+  created_date     DateTime @default(now()) @db.DateTime(6)
+  updated_date     DateTime @default(now()) @db.DateTime(6)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model mt__fttid__ {
+  THRID    String? @db.VarChar(32)
+  TMPTBLNM String? @db.VarChar(256)
+  ID       String? @db.VarChar(256)
+
+  @@index([ID], map: "IDX_TEMPORARY_ID")
+  @@ignore
+}
+
+model mt__lksrch {
+  UID        Int     @id @default(autoincrement())
+  CHNGCNT    Int?    @default(0)
+  TYP        Int?
+  SRCHTXTHSH BigInt?
+  ID         String? @db.VarChar(256)
+
+  @@index([ID], map: "IDX_ID")
+  @@index([SRCHTXTHSH, TYP, CHNGCNT], map: "IDX_SRCHTXTHSH_TYP_CHNGCNT")
+}
+
+model preferences {
+  context String
+  name    String
+  user_id String
+  value   String? @db.Text
+
+  @@id([context, name, user_id])
+}
+
+model report_schedules {
+  id                        Int               @id @default(autoincrement())
+  name                      String            @unique(map: "IDX_rsch_name")
+  frequency                 String            @db.VarChar(255)
+  generate_time             DateTime          @db.DateTime(0)
+  output_type               String            @db.VarChar(255)
+  show_title_on_every_page  Int?              @db.TinyInt
+  show_header               Int?              @db.TinyInt
+  show_header_on_every_page Int?              @db.TinyInt
+  show_page_number          Int?              @db.TinyInt
+  file_format               String            @db.VarChar(255)
+  latest_generated          DateTime?         @db.DateTime(0)
+  status                    String            @db.VarChar(255)
+  report_template_id        Int?
+  report_templates          report_templates? @relation(fields: [report_template_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b4047a159a844857c1feeac1e91")
+
+  @@index([report_template_id], map: "FK_b4047a159a844857c1feeac1e91")
+}
+
+model report_setting {
+  context String  @id
+  value   String? @db.VarChar(255)
+}
+
+model report_templates {
+  id               Int                @id @default(autoincrement())
+  name             String             @unique(map: "IDX_rt_name")
+  value            String?            @db.LongText
+  report_schedules report_schedules[]
+  widget_data_item widget_data_item[]
+}
+
+model reports {
+  id                   Int               @id @default(autoincrement())
+  title                String            @db.VarChar(255)
+  filters              String?           @db.LongText
+  predefined_report_id Int?
+  created_by           String            @db.VarChar(255)
+  updated_by           String            @db.VarChar(255)
+  created_date         DateTime          @default(now()) @db.DateTime(6)
+  updated_date         DateTime          @default(now()) @db.DateTime(6)
+  column_settings      column_settings[]
+}
+
+model t_acsgr {
+  ACSGRUID                    Int                           @id @default(autoincrement())
+  NM                          String?                       @db.VarChar(48)
+  DSCR                        String?                       @db.VarChar(2048)
+  DEL                         String?                       @db.Char(1)
+  DELDT                       DateTime?                     @db.DateTime(0)
+  LSTMOD                      Int?
+  LSTMODDT                    DateTime?                     @db.DateTime(0)
+  t_acsgrlvls                 t_acsgrlvls[]
+  t_acsgruss                  t_acsgruss[]
+  t_apbbpacgr                 t_apbbpacgr[]
+  t_dblmdacsgrs               t_dblmdacsgrs[]
+  t_dblmdflrgrs               t_dblmdflrgrs[]
+  t_flkbpacgr                 t_flkbpacgr[]
+  t_flrgrlvls                 t_flrgrlvls[]
+  t_fulacgrs                  t_fulacgrs[]
+  t_lulacgrs                  t_lulacgrs[]
+  t_tmapbbpacgr               t_tmapbbpacgr[]
+  t_visitacsgrmap             t_visitacsgrmap[]             @ignore
+  t_visitorterminalacgroupmap t_visitorterminalacgroupmap[] @ignore
+  t_znacsgr                   t_znacsgr[]
+
+  @@index([DEL], map: "T_ACSGR_DEL_INDEX")
+  @@index([LSTMOD], map: "T_ACSGR_LSTMOD_INDEX")
+}
+
+model t_acsgrlvls {
+  ACSGRUID  Int
+  ACSLVLUID Int
+  t_acsgr   t_acsgr  @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSGRMHACSLVL")
+  t_acslvl  t_acslvl @relation(fields: [ACSLVLUID], references: [ACSLVLUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSLVLIBTACSGR")
+
+  @@id([ACSGRUID, ACSLVLUID])
+  @@index([ACSLVLUID], map: "R_ACSLVLIBTACSGR")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_acsgrsent {
+  DEVICEID_ACSGRID String? @db.Char(50)
+
+  @@ignore
+}
+
+model t_acsgruss {
+  ACSGRUID Int
+  USRUID   Int
+  RGDDT    DateTime @db.DateTime(0)
+  t_acsgr  t_acsgr  @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSGRHSUSR")
+  t_usr    t_usr    @relation(fields: [USRUID], references: [USRUID], onDelete: Cascade, map: "R_USRIBTACSGR")
+
+  @@id([USRUID, ACSGRUID])
+  @@index([ACSGRUID], map: "R_ACSGRHSUSR")
+}
+
+model t_acslvl {
+  ACSLVLUID    Int            @id @default(autoincrement())
+  NM           String?        @db.VarChar(48)
+  DSCR         String?        @db.VarChar(2048)
+  DEL          String?        @db.Char(1)
+  DELDT        DateTime?      @db.DateTime(0)
+  LSTMOD       Int?
+  LSTMODDT     DateTime?      @db.DateTime(0)
+  t_acsgrlvls  t_acsgrlvls[]
+  t_acslvlitms t_acslvlitms[]
+
+  @@index([DEL], map: "T_ACSLVL_DEL_INDEX")
+  @@index([LSTMOD], map: "T_ACSLVL_LSTMOD_INDEX")
+}
+
+model t_acslvlitm {
+  ACSLVLITMUID   Int              @id @default(autoincrement())
+  DRGRUID        Int?
+  SCHUID         Int?
+  t_sch          t_sch?           @relation(fields: [SCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSLVLITMHSSCH")
+  t_drgr         t_drgr?          @relation(fields: [DRGRUID], references: [DRGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSLVLITMMHDRGR")
+  t_acslvlitmdrs t_acslvlitmdrs[]
+  t_acslvlitms   t_acslvlitms[]
+
+  @@index([SCHUID], map: "R_ACSLVLITMHSSCH")
+  @@index([DRGRUID], map: "R_ACSLVLITMMHDRGR")
+}
+
+model t_acslvlitmdrs {
+  ACSLVLITMUID Int
+  DRUID        Int
+  t_acslvlitm  t_acslvlitm @relation(fields: [ACSLVLITMUID], references: [ACSLVLITMUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSLVLITMHSDRS")
+  t_dr         t_dr        @relation(fields: [DRUID], references: [DRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRIBTACSLVLITM")
+
+  @@id([ACSLVLITMUID, DRUID])
+  @@index([DRUID], map: "R_DRIBTACSLVLITM")
+}
+
+model t_acslvlitms {
+  ACSLVLUID    Int
+  ACSLVLITMUID Int
+  t_acslvl     t_acslvl    @relation(fields: [ACSLVLUID], references: [ACSLVLUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSLVLHSACSLVLITM")
+  t_acslvlitm  t_acslvlitm @relation(fields: [ACSLVLITMUID], references: [ACSLVLITMUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSLVLITMIBTACSLVL")
+
+  @@id([ACSLVLUID, ACSLVLITMUID])
+  @@index([ACSLVLITMUID], map: "R_ACSLVLITMIBTACSLVL")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_acslvlsent {
+  DEVICEID_ACSLVLUID String? @db.Char(50)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_ad_column {
+  seq       Int
+  adcolumnm String @db.VarChar(64)
+
+  @@ignore
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_ad_group_filter {
+  object_guid       String @id @db.VarChar(128)
+  dn                String @db.Text
+  dn_host           String @db.Text
+  dn_path           String @db.Text
+  name              String @db.Text
+  node_type         String @db.VarChar(32)
+  filter            Int    @default(0)
+  last_sync_version Int    @default(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_ad_group_filter_setting {
+  id                Int    @id @default(autoincrement())
+  all_user_group    Int    @default(1)
+  dn                String @db.Text
+  last_sync_version Int    @default(0)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_ad_usrmapping {
+  columnm   String @db.VarChar(64)
+  adcolumnm String @db.VarChar(64)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_adserver_setting {
+  svraddr          String    @db.VarChar(128)
+  usrnm            String    @db.VarChar(64)
+  passwd           String    @db.VarChar(128)
+  domainnode       String?   @db.VarChar(128)
+  syncdurationtime Int?
+  syncdurationday  Int?
+  lastsynctime     DateTime? @db.DateTime(0)
+  lastsyncresult   String?   @db.VarChar(10)
+  keystorePassword String?   @db.VarChar(128)
+  lastupdatetime   DateTime? @db.DateTime(0)
+  useadlogin       Int?      @default(0)
+
+  @@ignore
+}
+
+model t_adt {
+  IDX    Int       @id @default(autoincrement())
+  MODFLG String?   @db.Char(1)
+  TARGET String?   @db.Char(20)
+  DSCR   String?   @db.LongText
+  MODDT  DateTime? @db.DateTime(0)
+  USRUID Int?
+  t_usr  t_usr?    @relation(fields: [USRUID], references: [USRUID], onDelete: Restrict, onUpdate: Restrict, map: "R_OPRTHSADT")
+
+  @@index([USRUID], map: "R_OPRTHSADT")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_advusrcrd {
+  crduid   Int?
+  threadid String? @db.VarChar(32)
+
+  @@index([crduid, threadid], map: "IX_ADVUSRCRDCRDTHRD")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_advusrgrp {
+  usrgruid Int?
+  threadid String? @db.VarChar(32)
+
+  @@index([usrgruid, threadid], map: "IX_ADVUSRGRPUSRGRTHRD")
+  @@ignore
+}
+
+model t_almact {
+  ALMUID                                Int           @id @default(autoincrement())
+  NM                                    String?       @db.VarChar(48)
+  DSCR                                  String?       @db.VarChar(2048)
+  OUPTTLUID                             Int?
+  OUPSNDUID                             Int?
+  OUPMSGUID                             Int?
+  ALMMSGUID                             Int?
+  ALMSNDUID                             Int?
+  SMTPSETUID                            Int?
+  OUPSIGUID                             Int?
+  DEVUID                                Int?
+  RELIDX                                Int?
+  t_almmsg_t_almact_ALMMSGUIDTot_almmsg t_almmsg?     @relation("t_almact_ALMMSGUIDTot_almmsg", fields: [ALMMSGUID], references: [ALMMSGUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ALMACTHSALMMSGASALMMSG")
+  t_oupsig                              t_oupsig?     @relation(fields: [OUPSIGUID], references: [OUPSIGUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ALMACTHSOUPSIG")
+  t_almsndset                           t_almsndset?  @relation(fields: [ALMSNDUID], references: [ALMSNDUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ALMACTMHALMSNDSET")
+  t_almsmtpset                          t_almsmtpset? @relation(fields: [SMTPSETUID], references: [SMTPSETUID], onDelete: Restrict, onUpdate: Restrict, map: "R_ALMSMTPSETIBTALMACT")
+  t_dev                                 t_dev?        @relation(fields: [DEVUID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_DEVIBTALMACT")
+  t_almmsg_t_almact_OUPMSGUIDTot_almmsg t_almmsg?     @relation("t_almact_OUPMSGUIDTot_almmsg", fields: [OUPMSGUID], references: [ALMMSGUID], onDelete: NoAction, onUpdate: NoAction, map: "R_RELATIONSHIP6")
+  t_almdr                               t_almdr[]
+  t_almeml                              t_almeml[]
+  t_almset                              t_almset[]
+  t_znfal                               t_znfal[]
+  t_zntapb                              t_zntapb[]
+
+  @@index([ALMMSGUID], map: "R_ALMACTHSALMMSGASALMMSG")
+  @@index([OUPSIGUID], map: "R_ALMACTHSOUPSIG")
+  @@index([ALMSNDUID], map: "R_ALMACTMHALMSNDSET")
+  @@index([SMTPSETUID], map: "R_ALMSMTPSETIBTALMACT")
+  @@index([DEVUID], map: "R_DEVIBTALMACT")
+  @@index([OUPMSGUID], map: "R_RELATIONSHIP6")
+}
+
+model t_almdr {
+  ALMDRUID  Int       @id @default(autoincrement())
+  ALMACTUID Int?
+  DRUID     Int?
+  DRSIG     Int?
+  t_almact  t_almact? @relation(fields: [ALMACTUID], references: [ALMUID], onDelete: NoAction, onUpdate: NoAction, map: "T_ALMDR_FK_ALMACT")
+  t_dr      t_dr?     @relation(fields: [DRUID], references: [DRUID], onDelete: NoAction, onUpdate: NoAction, map: "T_ALMDR_FK_DR")
+
+  @@index([ALMACTUID], map: "T_ALMDR_FK_ALMACT")
+  @@index([DRUID], map: "T_ALMDR_FK_DR")
+}
+
+model t_almeml {
+  ALMEMLUID Int      @default(autoincrement())
+  ALMUID    Int
+  RECIPIENT String?  @db.Char(255)
+  t_almact  t_almact @relation(fields: [ALMUID], references: [ALMUID], onUpdate: Restrict, map: "R_ALMACTHSALMEVT")
+
+  @@id([ALMEMLUID, ALMUID])
+  @@index([ALMUID], map: "R_ALMACTHSALMEVT")
+}
+
+model t_almevt202406 {
+  EVTLGUID Int       @id @default(autoincrement())
+  ACKDT    DateTime? @db.DateTime(0)
+  ACKMSG   String?   @db.VarChar(2048)
+  ACKACT   Int?
+  ACKUSRID String?   @db.Char(32)
+}
+
+model t_almevt202407 {
+  EVTLGUID Int       @id @default(autoincrement())
+  ACKDT    DateTime? @db.DateTime(0)
+  ACKMSG   String?   @db.VarChar(2048)
+  ACKACT   Int?
+  ACKUSRID String?   @db.Char(32)
+}
+
+model t_almmsg {
+  ALMMSGUID                             Int        @id @default(autoincrement())
+  NM                                    String?    @db.VarChar(48)
+  MSG                                   String?    @db.VarChar(2048)
+  t_almact_t_almact_ALMMSGUIDTot_almmsg t_almact[] @relation("t_almact_ALMMSGUIDTot_almmsg")
+  t_almact_t_almact_OUPMSGUIDTot_almmsg t_almact[] @relation("t_almact_OUPMSGUIDTot_almmsg")
+}
+
+model t_almset {
+  ALMSETUID   Int           @id @default(autoincrement())
+  NM          String?       @db.VarChar(48)
+  PRIO        Int?
+  SCHUID      Int?
+  ALMTYP      Int?
+  ALMACTUID   Int?
+  QCACT       String?       @default(dbgenerated("(N)")) @db.Char(1)
+  t_almact    t_almact?     @relation(fields: [ALMACTUID], references: [ALMUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ALMSETHSALMACT")
+  t_sch       t_sch?        @relation(fields: [SCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ALMSETHSSCH")
+  t_almsetevt t_almsetevt[]
+  t_almsetobj t_almsetobj[]
+  t_qcactalm  t_qcactalm[]
+
+  @@index([ALMACTUID], map: "R_ALMSETHSALMACT")
+  @@index([SCHUID], map: "R_ALMSETHSSCH")
+}
+
+model t_almsetevt {
+  ALMSETUID Int
+  SUBEVT    Int
+  EVT       Int
+  t_evttyp  t_evttyp @relation(fields: [EVT], references: [EVT], onDelete: NoAction, onUpdate: NoAction, map: "R_ALMSETEVTHSEVT")
+  t_almset  t_almset @relation(fields: [ALMSETUID], references: [ALMSETUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ALMSETHSALMSETEVT")
+
+  @@id([SUBEVT, ALMSETUID, EVT])
+  @@index([EVT], map: "R_ALMSETEVTHSEVT")
+  @@index([ALMSETUID], map: "R_ALMSETHSALMSETEVT")
+}
+
+model t_almsetobj {
+  ALMOBJUID Int
+  ALMSETUID Int
+  t_almset  t_almset @relation(fields: [ALMSETUID], references: [ALMSETUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ALMSETIBTALMSETOBJ")
+
+  @@id([ALMOBJUID, ALMSETUID])
+  @@index([ALMSETUID], map: "R_ALMSETIBTALMSETOBJ")
+}
+
+model t_almsmtpset {
+  SMTPSETUID Int        @id @default(autoincrement())
+  NM         String?    @db.VarChar(48)
+  DSCR       String?    @db.VarChar(2048)
+  SDR        String?    @db.VarChar(255)
+  SMTPSRVADR String?    @db.VarChar(255)
+  SMTPSRVPT  Int?
+  SMTPUSN    String?    @db.VarChar(255)
+  SMTPPW     String?    @db.VarChar(128)
+  SMTPSEC    String?    @db.Char(1)
+  t_almact   t_almact[]
+}
+
+model t_almsndset {
+  ALMSNDUID Int        @id @default(autoincrement())
+  NM        String?    @db.VarChar(48)
+  DSCR      String?    @db.VarChar(2048)
+  MIMTYP    String?    @db.VarChar(48)
+  DAT       Bytes?
+  SZ        Int?
+  CHS       String?    @db.VarChar(40)
+  t_almact  t_almact[]
+}
+
+model t_apbbpacgr {
+  ZNUID    Int
+  ACSGRUID Int
+  IDX      Int
+  RGDDT    DateTime? @db.DateTime(0)
+  t_acsgr  t_acsgr   @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSGRIBTBPACGR")
+  t_znapb  t_znapb   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNAPBHSBPACGR")
+
+  @@id([ZNUID, IDX, ACSGRUID])
+  @@index([ACSGRUID], map: "R_ACSGRIBTBPACGR")
+}
+
+model t_atmsyndevgrs {
+  USRUID   Int
+  DEVGRUID Int
+  t_devgr  t_devgr @relation(fields: [DEVGRUID], references: [DEVGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_TIUSRONDEVGR")
+  t_usr    t_usr   @relation(fields: [USRUID], references: [USRUID], onUpdate: Restrict, map: "R_USRDNTODEVGRATMT")
+
+  @@id([USRUID, DEVGRUID])
+  @@index([DEVGRUID], map: "R_TIUSRONDEVGR")
+}
+
+model t_atmsyndevs {
+  DEVUID Int
+  USRUID Int
+  t_dev  t_dev @relation(fields: [DEVUID], references: [DEVID], onUpdate: Restrict, map: "R_TIUSRONDEV")
+  t_usr  t_usr @relation(fields: [USRUID], references: [USRUID], onUpdate: Restrict, map: "R_USRDTDEVATMT")
+
+  @@id([DEVUID, USRUID])
+  @@index([USRUID], map: "R_USRDTDEVATMT")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_audit {
+  USRID   String?   @db.VarChar(255)
+  PERM    String?   @db.VarChar(255)
+  IP      String?   @db.VarChar(255)
+  DATE    DateTime? @db.DateTime(0)
+  MENU    String?   @db.VarChar(255)
+  TARGET  String?   @db.Text
+  METHOD  Int?
+  CONTENT String?   @db.Text
+  TYPE    Int?      @default(0)
+
+  @@ignore
+}
+
+model t_authgrp {
+  AUTHGRUID Int       @id @default(autoincrement())
+  IDX       Int?
+  NM        String?   @db.VarChar(48)
+  DEL       String?   @default(dbgenerated("(N)")) @db.Char(1)
+  LSTMOD    Int?      @default(0)
+  t_usrgr   t_usrgr[]
+
+  @@index([LSTMOD], map: "T_AUTHGRP_LSTMOD_INDEX")
+}
+
+model t_blkl {
+  CRDUID  Int      @unique(map: "UNIQUE_CRDUID")
+  RGDDT   DateTime @db.DateTime(0)
+  USRUID  Int?
+  ISSDCNT Int?
+  t_crd   t_crd    @relation(fields: [CRDUID], references: [CRDUID], onDelete: Cascade, map: "R_CRDMEOBLKL")
+  t_usr   t_usr?   @relation(fields: [USRUID], references: [USRUID], onDelete: Restrict, onUpdate: Restrict, map: "R_USRMEOBLKL")
+
+  @@unique([USRUID, ISSDCNT], map: "UNIQUE_ISSDCNT")
+}
+
+model t_bzoup {
+  DEVUID   Int
+  DEVSTA   Int
+  CNT      Int?
+  BZ1LVL   Int?
+  BZ1DRTMS Int?
+  BZ1DLYMS Int?
+  BZ1FDOUT String? @db.Char(1)
+  BZ2LVL   Int?
+  BZ2DRTMS Int?
+  BZ2DLYMS Int?
+  BZ2FDOUT String? @db.Char(1)
+  BZ3LVL   Int?
+  BZ3DRTMS Int?
+  BZ3DLYMS Int?
+  BZ3FDOUT String? @db.Char(1)
+  t_dev    t_dev   @relation(fields: [DEVUID], references: [DEVID], onUpdate: Restrict, map: "R_DEVMHBZOUPIBE")
+
+  @@id([DEVSTA, DEVUID])
+  @@index([DEVUID], map: "T_BZOUP_IX_2013151290")
+}
+
+model t_crd {
+  CRDUID      Int           @id @default(autoincrement())
+  CRDTYPUID   Int
+  CRDCSN      String?       @db.VarChar(128)
+  ASMUID      Int?
+  WGDFMUID    Int?
+  WGDFMTVER   Int?
+  t_blkl      t_blkl?
+  t_wgdfmt    t_wgdfmt?     @relation(fields: [WGDFMUID], references: [WGDFMUID], onDelete: Restrict, onUpdate: Restrict, map: "R_CRDCANHAVEWGDFMT")
+  t_crdidasm  t_crdidasm?   @relation(fields: [ASMUID], references: [ASMUID], onDelete: Restrict, onUpdate: Restrict, map: "R_CRDCANHVCRDIDASM")
+  t_crdtyp    t_crdtyp      @relation(fields: [CRDTYPUID], references: [CRDTYPUID], onUpdate: Restrict, map: "R_CRDHSCRDTYP")
+  t_crdisshis t_crdisshis[]
+  t_mblcrd    t_mblcrd?
+  t_usrcrd    t_usrcrd?
+  t_zncrd     t_zncrd[]
+
+  @@index([WGDFMUID], map: "R_CRDCANHAVEWGDFMT")
+  @@index([ASMUID], map: "R_CRDCANHVCRDIDASM")
+  @@index([CRDCSN], map: "T_CRD_CRDCSN_INDEX")
+  @@index([CRDTYPUID], map: "T_CRD_IX_3046379513")
+}
+
+model t_crdidasm {
+  ASMUID   Int       @id @default(autoincrement())
+  TMPLBLK1 String?   @db.Char(255)
+  TMPLBLK2 String?   @db.Char(255)
+  TMPLBLK3 String?   @db.Char(255)
+  TMPLBLK4 String?   @db.Char(255)
+  ISSDDT   DateTime? @db.DateTime(0)
+  t_crd    t_crd[]
+}
+
+model t_crdisshis {
+  CRDISSHISUID Int       @id @default(autoincrement())
+  CRDUID       Int
+  ISSDDT       DateTime  @db.DateTime(0)
+  EXPDT        DateTime? @db.DateTime(0)
+  CNC          String?   @db.Char(1)
+  CNCDT        DateTime? @db.DateTime(0)
+  USRUID       Int
+  ISSDCNT      Int
+  ISSDDSCR     String?   @db.VarChar(2048)
+  CNCDSCR      String?   @db.VarChar(2048)
+  t_crd        t_crd     @relation(fields: [CRDUID], references: [CRDUID], onDelete: Cascade, onUpdate: Restrict, map: "R_CRDHSCRDISSHIS")
+  t_usr        t_usr     @relation(fields: [USRUID], references: [USRUID], onUpdate: Restrict, map: "R_CRDISSHISHSUSRAAA")
+
+  @@unique([USRUID, CRDUID, ISSDCNT], map: "unique_issdcnt")
+  @@index([CRDUID], map: "R_CRDHSCRDISSHIS")
+}
+
+model t_crdlay {
+  CRDLAYUID        Int        @id @default(autoincrement())
+  NM               String?    @db.VarChar(48)
+  DSCR             String?    @db.VarChar(2048)
+  USESCKEY         Int?
+  MIPKEY           Bytes?
+  MISCKEY          Bytes?
+  MISTBLKIDX       Int?
+  ICPKEY           Bytes?
+  ICSCKEY          Bytes?
+  ICSTBLKIDX       Int?
+  DESPKEY          Bytes?
+  DESSCKEY         Bytes?
+  DESAPPID         Int?
+  DESFLEID         Int?
+  DESENCTYP        Int?
+  TEMPNUM          Int?
+  TEMPSZE          Int?
+  DESOPMODE        Int?
+  DESAPPMKEY       Bytes?
+  DESFILERKEY      Bytes?
+  DESFILEWKEY      Bytes?
+  DESFILERKEYIDX   Int?
+  DESFILEWKEYIDX   Int?
+  USEFACETEMP      Int?
+  MBLPKEY          Bytes?
+  MBLSCKEY         Bytes?
+  SEOSPKEY         Bytes?
+  SEOSSCKEY        Bytes?
+  SEOSADF          Bytes?
+  HXCRDKY          Int?
+  SCTYP            String?    @db.VarChar(20)
+  MISKIPBYTES      Int?
+  DESFIRESKIPBYTES Int?
+  MIDATASZE        Int?
+  DESFIREDATASZE   Int?
+  t_crdtyp         t_crdtyp[]
+  t_dev            t_dev[]
+  t_mblcrd         t_mblcrd[]
+}
+
+model t_crdt {
+  CRDTUID   Int         @id @default(autoincrement())
+  USRUID    Int?
+  IDX       Int?
+  TYP       Int?
+  t_usr     t_usr?      @relation(fields: [USRUID], references: [USRUID], onDelete: Cascade, onUpdate: Restrict, map: "FK_T_CRDTUSRUID")
+  t_crdtbin t_crdtbin[]
+
+  @@index([USRUID], map: "FK_T_CRDTUSRUID")
+  @@index([TYP], map: "T_CRDT_TYP_INDEX")
+}
+
+model t_crdtbin {
+  CRDTBINUID      BigInt      @id @default(autoincrement())
+  TYP             Int         @default(0)
+  CRDTUID         Int?
+  CRDTTMPLID      BigInt?
+  BIN             Bytes?
+  t_crdt          t_crdt?     @relation(fields: [CRDTUID], references: [CRDTUID], onDelete: Cascade, onUpdate: Restrict, map: "FK_T_CRDTBINCRDT")
+  t_crdtbin       t_crdtbin?  @relation("t_crdtbinTot_crdtbin", fields: [CRDTTMPLID], references: [CRDTBINUID], onDelete: Cascade, onUpdate: Restrict, map: "FK_T_CRDTTMPLIMG")
+  other_t_crdtbin t_crdtbin[] @relation("t_crdtbinTot_crdtbin")
+
+  @@index([TYP], map: "IX_T_CRDTBIN")
+  @@index([CRDTUID], map: "IX_T_CRDTBINCRDT")
+  @@index([CRDTTMPLID], map: "IX_T_CRDTTMPLIMG")
+  @@index([CRDTUID], map: "T_CRDTBIN_IX_1746180784")
+  @@index([CRDTUID, TYP], map: "T_CRDTBIN_IX_2592080315")
+  @@index([CRDTTMPLID], map: "T_CRDTBIN_IX_4097388590")
+}
+
+model t_crdtyp {
+  CRDTYPUID Int       @id
+  NM        String?   @db.VarChar(48)
+  DSCR      String?   @db.VarChar(2048)
+  TYP       Int?
+  MD        String?   @db.Char(1)
+  CRDLAYUID Int?
+  t_crd     t_crd[]
+  t_crdlay  t_crdlay? @relation(fields: [CRDLAYUID], references: [CRDLAYUID], onDelete: Restrict, onUpdate: Restrict, map: "R_CRDTYPMHCRDLAY")
+
+  @@index([CRDLAYUID], map: "R_CRDTYPMHCRDLAY")
+}
+
+model t_cusfldtyp {
+  CUSFLDUID   Int           @id @default(autoincrement())
+  NM          String?       @db.VarChar(48)
+  DSCR        String?       @db.VarChar(2048)
+  FLDTYP      String?       @db.Char(1)
+  ENB         String?       @db.Char(1)
+  DAT         String?       @db.VarChar(255)
+  FLDORD      Int?
+  t_usrcusfld t_usrcusfld[]
+}
+
+model t_cusfldtyp_vst {
+  CUSFLDUID     Int             @id @default(autoincrement())
+  NM            String?         @db.VarChar(48)
+  DSCR          String?         @db.VarChar(2048)
+  FLDTYP        String?         @db.Char(1)
+  ENB           String?         @db.Char(1)
+  DAT           String?         @db.VarChar(255)
+  FLDORD        Int?
+  t_visitcusfld t_visitcusfld[]
+}
+
+model t_dblmdacsgrs {
+  ACSGRUID Int
+  DRUID    Int
+  t_acsgr  t_acsgr @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSGRIBTDRFDM")
+  t_dr     t_dr    @relation(fields: [DRUID], references: [DRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRHSACSGRFDM")
+
+  @@id([ACSGRUID, DRUID])
+  @@index([DRUID], map: "R_DRHSACSGRFDM")
+}
+
+model t_dblmdflrgrs {
+  ACSGRUID Int
+  ELVTUID  Int
+  t_acsgr  t_acsgr @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DBLMDFLRGRS_ACSGRUID")
+  t_elvt   t_elvt  @relation(fields: [ELVTUID], references: [ELVTUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DBLMDFLRGRS_ELVTUID")
+
+  @@id([ACSGRUID, ELVTUID])
+  @@index([ACSGRUID], map: "R_DBLMDFLRGRS_ACSGRUID")
+  @@index([ELVTUID], map: "R_DBLMDFLRGRS_ELVTUID")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_dev {
+  DEVID                                     Int                 @id
+  DEVTYPUID                                 Int
+  CNCTTYP                                   String?             @db.Char(1)
+  RGDDT                                     DateTime?           @db.DateTime(0)
+  DEL                                       String              @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT                                     DateTime?           @db.DateTime(0)
+  VRS                                       Int?
+  LSTUDTDT                                  DateTime?           @db.DateTime(0)
+  CHS                                       String?             @db.VarChar(40)
+  CNCTMD                                    String?             @default(dbgenerated("(S)")) @db.Char(1)
+  NM                                        String              @unique(map: "name") @db.VarChar(48)
+  HDWVER                                    String?             @db.Char(32)
+  FWVER                                     String?             @db.Char(32)
+  KRNVER                                    String?             @db.Char(32)
+  PRDTNM                                    String?             @db.Char(32)
+  FWREV                                     String?             @db.Char(32)
+  KRNREV                                    String?             @db.Char(32)
+  DEVLCKPW                                  String?             @db.Char(32)
+  LSTVRS                                    Int?
+  LSTUDT                                    Int?
+  DEVGRUID                                  Int?
+  CNCTSTA                                   String?             @db.Char(20)
+  ENBDHCP                                   String?             @db.Char(1)
+  MCADR                                     String?             @db.Char(32)
+  IP                                        String?             @db.Char(32)
+  GW                                        String?             @db.Char(32)
+  SBNMSK                                    String?             @db.Char(32)
+  SRVIP                                     String?             @db.Char(32)
+  DEVPT                                     Int?
+  SRVPT                                     Int?
+  RS4MD                                     String?             @db.Char(1)
+  RS4BRT                                    Int?
+  IPDSPICFG                                 String?             @db.Char(1)
+  IPDUSFLCD                                 String?             @db.Char(1)
+  IPDFLCD                                   String?             @db.VarChar(16)
+  IPDCRDFM                                  Int?
+  IPDOSDPID                                 Int?
+  WLNENB                                    String?             @db.Char(1)
+  WLNOPRMD                                  String?             @default(dbgenerated("(M)")) @db.Char(1)
+  WLNATHTYP                                 String?             @default(dbgenerated("(O)")) @db.Char(1)
+  WLNENCTYP                                 String?             @default(dbgenerated("(N)")) @db.Char(1)
+  WLNESSID                                  String?             @db.Char(48)
+  WLNATHKEY                                 String?             @db.Char(48)
+  USBENBUSB                                 String?             @db.Char(1)
+  USBENBUSBMEM                              String?             @db.Char(1)
+  ENBPRIATH                                 String?             @db.Char(1)
+  ENBSRVMCH                                 String?             @db.Char(1)
+  MCHTMOSS                                  Int?
+  FNGPSECLVL                                String?             @default(dbgenerated("(N)")) @db.Char(1)
+  FNGPFSTMD                                 String?             @default(dbgenerated("(A)")) @db.Char(1)
+  FNGPSST                                   Int?
+  FNGPVWIMG                                 String?             @db.Char(1)
+  FNGPSCNTMO                                Int?                @default(1)
+  FNGPDTTFKFNG                              String?             @db.Char(1)
+  FNGPTMPLFM                                String?             @db.Char(1)
+  FNGPUSRPRT                                String?             @db.Char(1)
+  FNGPADVENR                                String?             @db.Char(1)
+  FNGPTHR                                   Int?
+  FNGPMFRMCH                                String?             @db.Char(1)
+  FNGPSNSMD                                 String?             @default(dbgenerated("(A)")) @db.Char(1)
+  FCSECLVL                                  Int?
+  FCENRSST                                  Int?
+  FCUSTMPLIMG                               String?             @db.Char(1)
+  FCPROXLVL                                 Int?
+  CRDBTORD                                  String?             @db.Char(1)
+  ENBWGDFM                                  String?             @db.Char(1)
+  CRDIDFM                                   Int?
+  CRDDSBMIF                                 String?             @db.Char(1)
+  CRDENBACSONCRD                            String?             @db.Char(1)
+  CRDLAYUID                                 Int?
+  SNDVOL                                    Int?
+  USSNDEFT                                  String?             @db.Char(1)
+  USVOC                                     String?             @db.Char(1)
+  LNG                                       String?             @db.Char(3)
+  DTFM                                      Int?
+  MNUTMOSS                                  Int?
+  BLTTMOSS                                  Int?
+  MSGTMOSS                                  Int?
+  BGRTYP                                    Int?
+  THM                                       Int?
+  DISCLK                                    String?             @db.Char(1)
+  SCRSV                                     String?             @default(dbgenerated("(Y)")) @db.Char(1)
+  TZ                                        Int?
+  SYNTM                                     String?             @db.Char(1)
+  ENBBSCMD                                  String?             @db.Char(1)
+  ENBFLLACS                                 String?             @db.Char(1)
+  WGDMD                                     String?             @db.Char(20)
+  WGDINOUT                                  Int?
+  WGDPLSWID                                 Int?
+  WGDPLSITV                                 Int?
+  CARDREADERID                              String?             @map("___CARDREADERID") @db.Char(20)
+  INTPTYP                                   Int?
+  VIPSRVIP                                  String?             @db.VarChar(384)
+  VIPSRVPT                                  String?             @db.VarChar(32)
+  VIPDISNM                                  String?             @db.VarChar(128)
+  VIPPHNO                                   String?             @db.Char(32)
+  VIPID                                     String?             @db.Char(32)
+  VIPPW                                     String?             @db.Char(128)
+  SPKGN                                     Int?
+  MICGN                                     Int?
+  BVPMD                                     Int?
+  BVPDRCTR                                  Int?
+  BVPPW                                     String?             @db.Char(16)
+  TNAMD                                     Int?
+  TNAKEYRQD                                 String?             @db.Char(1)
+  TNAFXDCD                                  Int?                @default(0)
+  PARENTDEVID                               Int?
+  LSTLGID                                   Int?
+  MTUSZ                                     Int?
+  LNSPD                                     Int?
+  STA                                       Int?
+  AUTHTMO                                   Int?                @default(10)
+  UDTCNT                                    Int?                @default(0)
+  INPPTNUM                                  Int?                @default(0)
+  LFDLVL                                    Int?                @default(0)
+  CMRFQC                                    Int?                @default(0)
+  DNSADR                                    String?             @db.Char(255)
+  ENBGLBAPB                                 String?             @default(dbgenerated("(N)")) @db.Char(1)
+  GLBAPBFAACT                               String?             @default(dbgenerated("(N)")) @db.Char(1)
+  UDTCRDLAY                                 Int?
+  FCDTCLVL                                  Int?                @default(0)
+  UDTWGDFMT                                 Int?
+  VIPUS                                     String?             @default(dbgenerated("(N)")) @db.Char(1)
+  VIPDTMD                                   Int?                @default(0)
+  VIPEXTBTN                                 Int?                @default(0)
+  UDTDEKY                                   Int?
+  ENBCDFRKEY                                String?             @db.Char(1)
+  PKTVERSION                                Int?                @default(0)
+  USCRDOPRTN                                String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USCSN                                     String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USEM                                      String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USMFRFLC                                  String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USWGD                                     String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USICS                                     String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USHDPRX                                   String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USSMT                                     String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USCLSPLS                                  String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USDSFEV1                                  String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USSRSE                                    String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USSEOS                                    String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USMBL                                     String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USNFC                                     String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USBLE                                     String?             @default(dbgenerated("(N)")) @db.Char(1)
+  ENBOCCP                                   String?             @default(dbgenerated("(N)")) @db.Char(1)
+  BARCODEUSE                                String?             @default(dbgenerated("(N)")) @db.Char(1)
+  BARSCANTMO                                Int?                @default(4)
+  VISUALBARCODEUSE                          String?             @default(dbgenerated("(N)")) @db.Char(1)
+  BARCAMERATMO                              Int?                @default(10)
+  MOTIONSENSOR                              Int?                @default(1)
+  FCMXRT                                    Int?
+  FCWDMN                                    Int?
+  FCWDMX                                    Int?
+  FCSRCHRNGX                                Int?
+  FCSRCHRNGWD                               Int?
+  FCDTCDSTMIN                               Int?
+  FCDTCDSTMAX                               Int?
+  FCWDSCH                                   String?             @default(dbgenerated("(N)")) @db.Char(1)
+  VIPAUTID                                  String?             @db.VarChar(128)
+  VIPREGDUR                                 Int?
+  USEOTPROXSER                              String?             @default(dbgenerated("(N)")) @db.Char(1)
+  VIPOTPROXIPADDRS                          String?             @db.VarChar(384)
+  VIPOTPROXSERPT                            String?             @db.VarChar(32)
+  USEEXTNUM                                 String?             @default(dbgenerated("(N)")) @db.Char(1)
+  VIPSPKVOL                                 Int?                @default(50)
+  VIPMICVOL                                 Int?                @default(50)
+  RTSPID                                    String?             @db.VarChar(128)
+  RTSPPW                                    String?             @db.VarChar(128)
+  RTSPPT                                    String?             @db.VarChar(32)
+  RTSPENB                                   String?             @default(dbgenerated("(N)")) @db.Char(1)
+  UDTAPHNMR                                 Int?
+  ENBAPHNMR                                 String?             @db.Char(1)
+  FCSCWTTM                                  Int?
+  ISFCGRMCDEV                               String?             @default(dbgenerated("(N)")) @db.Char(1)
+  UDTAUTHGRP                                Int?
+  RS4CHIDX                                  Int?                @default(-1)
+  ENBCLEONTAMPR                             String?             @default(dbgenerated("(N)")) @db.Char(1)
+  DST1                                      Int?                @default(0)
+  DST2                                      Int?                @default(0)
+  DATETYPE                                  Int?
+  QCKENR                                    String?             @default(dbgenerated("(N)")) @db.Char(1)
+  PREVWOPT                                  Int?                @default(0)
+  DEVPRIMSG                                 String?             @default(dbgenerated("(N)")) @db.Char(1)
+  SERVPRIMSG                                String?             @default(dbgenerated("(N)")) @db.Char(1)
+  DPCTCK                                    String?             @default(dbgenerated("(N)")) @db.Char(1)
+  FCDPCTCK                                  String?             @default(dbgenerated("(N)")) @db.Char(1)
+  FOPMOD                                    Int?
+  SMTCRDBTORD                               String?             @db.Char(1)
+  KPBLOFF                                   Int?
+  USCUSMT                                   String?             @db.Char(1)
+  USCUCLSPLS                                String?             @db.Char(1)
+  USCUDSFEV1                                String?             @db.Char(1)
+  CUCRDLAYUID                               Int?
+  CUSMTCRDBTORD                             String?             @db.Char(1)
+  USTOM                                     String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USTOMBLE                                  String?             @default(dbgenerated("(N)")) @db.Char(1)
+  USTOMNFC                                  String?             @default(dbgenerated("(N)")) @db.Char(1)
+  ENBTOMENRVF                               String?             @default(dbgenerated("(N)")) @db.Char(1)
+  TOMBTORD                                  String?             @db.Char(1)
+  t_almact                                  t_almact[]
+  t_atmsyndevs                              t_atmsyndevs[]
+  t_bzoup                                   t_bzoup[]
+  t_crdlay                                  t_crdlay?           @relation(fields: [CRDLAYUID], references: [CRDLAYUID], onDelete: Restrict, onUpdate: Restrict, map: "R_DEVHSCRDLAYAAA")
+  t_devtyp                                  t_devtyp            @relation(fields: [DEVTYPUID], references: [DEVTYPUID], map: "R_DEVHSDEVTYP")
+  t_devgr                                   t_devgr?            @relation(fields: [DEVGRUID], references: [DEVGRUID], map: "R_DEVISBELONGTODEVGR")
+  t_dev                                     t_dev?              @relation("t_devTot_dev", fields: [PARENTDEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_DEVMHDEVASRS4SLVDEV")
+  other_t_dev                               t_dev[]             @relation("t_devTot_dev")
+  t_devoprmd                                t_devoprmd[]
+  t_devoprt                                 t_devoprt[]
+  t_devrs4chns                              t_devrs4chns[]
+  t_devthm                                  t_devthm?
+  t_devtposdp                               t_devtposdp[]
+  t_devwgd                                  t_devwgd?
+  t_dr_t_dr_INSDEVUIDTot_dev                t_dr[]              @relation("t_dr_INSDEVUIDTot_dev")
+  t_dr_t_dr_OUSDEVUIDTot_dev                t_dr[]              @relation("t_dr_OUSDEVUIDTot_dev")
+  t_drtrgact                                t_drtrgact[]        @ignore
+  t_elvt                                    t_elvt[]
+  t_elvtdevs                                t_elvtdevs[]
+  t_elvttrgact_t_elvttrgact_INPDEVIDTot_dev t_elvttrgact[]      @relation("t_elvttrgact_INPDEVIDTot_dev")
+  t_elvttrgact_t_elvttrgact_OUPDEVIDTot_dev t_elvttrgact[]      @relation("t_elvttrgact_OUPDEVIDTot_dev")
+  t_etrdevs                                 t_etrdevs[]
+  t_evtflt                                  t_evtflt[]
+  t_exdevs                                  t_exdevs[]
+  t_flrs                                    t_flrs[]
+  t_inpcfg                                  t_inpcfg[]
+  t_ledoup                                  t_ledoup[]
+  t_lstsynsta                               t_lstsynsta?
+  t_rmjb                                    t_rmjb[]
+  t_rmjbev                                  t_rmjbev[]
+  t_rmjbzn                                  t_rmjbzn[]
+  t_takey                                   t_takey[]
+  t_trgact_t_trgact_DEVIDTot_dev            t_trgact[]          @relation("t_trgact_DEVIDTot_dev")
+  t_trgact_t_trgact_OUPDEVIDTot_dev         t_trgact[]          @relation("t_trgact_OUPDEVIDTot_dev")
+  t_trgact_t_trgact_INPDEVIDTot_dev         t_trgact[]          @relation("t_trgact_INPDEVIDTot_dev")
+  t_vipphbks                                t_vipphbks[]
+  t_visitorterminal                         t_visitorterminal[]
+  t_wgdbz_t_wgdbz_OUPDEVIDTot_dev           t_wgdbz[]           @relation("t_wgdbz_OUPDEVIDTot_dev")
+  t_wgdbz_t_wgdbz_DEVIDTot_dev              t_wgdbz?            @relation("t_wgdbz_DEVIDTot_dev")
+  t_wgdled_t_wgdled_DEVIDTot_dev            t_wgdled[]          @relation("t_wgdled_DEVIDTot_dev")
+  t_wgdled_t_wgdled_OUPDEVIDTot_dev         t_wgdled[]          @relation("t_wgdled_OUPDEVIDTot_dev")
+  t_wgdtmpr_t_wgdtmpr_DEVIDTot_dev          t_wgdtmpr?          @relation("t_wgdtmpr_DEVIDTot_dev")
+  t_wgdtmpr_t_wgdtmpr_INPDEVIDTot_dev       t_wgdtmpr[]         @relation("t_wgdtmpr_INPDEVIDTot_dev")
+  t_znfal                                   t_znfal[]
+  t_zntrgact                                t_zntrgact[]        @ignore
+
+  @@index([CRDLAYUID], map: "R_DEVHSCRDLAYAAA")
+  @@index([DEVGRUID], map: "R_DEVISBELONGTODEVGR")
+  @@index([PARENTDEVID], map: "R_DEVMHDEVASRS4SLVDEV")
+  @@index([DEL], map: "T_DEV_DEL_INDEX")
+  @@index([DEVTYPUID, PRDTNM], map: "T_DEV_DEVTYPUID_PRDTNM_INDEX")
+  @@index([DEL, DEVGRUID], map: "T_DEV_IX_1892529606")
+  @@index([DEL, PARENTDEVID], map: "T_DEV_IX_3174448796")
+  @@index([DEL, PARENTDEVID, RS4MD, STA], map: "T_DEV_IX_3644463090")
+  @@index([DEL, PARENTDEVID, STA], map: "T_DEV_IX_3918714596")
+  @@index([DEL, CNCTMD, PARENTDEVID], map: "T_DEV_IX_573076637")
+  @@index([DEL], map: "T_DEV_IX_67594")
+  @@index([RS4MD], map: "T_DEV_IX_78253833")
+  @@index([LSTUDT], map: "T_DEV_LSTUDT_INDEX")
+  @@index([STA], map: "T_DEV_STA_INDEX")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_devcap {
+  DEVCAPUID Int     @id @default(autoincrement())
+  DEVTYPUID Int?
+  FWVRS     String? @db.VarChar(32)
+  CAP       Int?
+
+  @@unique([DEVTYPUID, FWVRS, CAP], map: "UK_DEV_CAP")
+}
+
+model t_devcaps {
+  ID              Int       @id @default(autoincrement())
+  DEVTYPUID       Int       @db.SmallInt
+  PRDTNM          String?   @db.VarChar(50)
+  FWVER           String?   @db.VarChar(20)
+  FNP             Boolean
+  FACE            Boolean
+  SOUND           Boolean
+  LED             Boolean
+  BUZZER          Boolean
+  USRTR           Boolean
+  KPD             Boolean
+  TPD             Boolean
+  ZN              Boolean
+  DSP             Boolean
+  MST             Boolean
+  SLV             Boolean
+  CRD             Boolean
+  CSNCRD          Boolean
+  WGDCRD          Boolean
+  SMTCRD          Boolean
+  WIFI            Boolean
+  TAMP            Boolean
+  IMGLOG          Boolean
+  LFD             Boolean
+  LCK             Boolean
+  SSL             Boolean
+  DATA_ENC        Boolean
+  ALPHANUM        Boolean
+  MBCRD           Boolean
+  WGDIN           Boolean
+  WGDOT           Boolean
+  FUNC_LED        Boolean
+  FUNC_AUTH       Boolean
+  NR_INP          Int       @db.TinyInt
+  NR_AUXINP       Int       @db.TinyInt
+  NR_SPVSINP      Int       @db.TinyInt
+  NR_OUP          Int       @db.TinyInt
+  NR_REL          Int       @db.TinyInt
+  NR_RS4CH        Int       @db.TinyInt
+  NR_TNAKEY       Int       @db.TinyInt
+  NR_WGDCH        Int       @db.TinyInt
+  CREATED         DateTime  @db.DateTime(0)
+  UPDATED         DateTime? @db.DateTime(0)
+  supportCardSpec Int       @default(0) @db.UnsignedInt
+  MX_SYNC_CNT     Int?      @default(500)
+
+  @@index([DEVTYPUID], map: "T_DEVCAPS_DEVTYPUID_INDEX")
+  @@index([DEVTYPUID, PRDTNM], map: "T_DEVCAPS_DEVTYPUID_PRDTNM_INDEX")
+}
+
+model t_devcapsfrdev {
+  DEVID              Int       @id
+  CAPA_SPT           Int?
+  PRDTNM             String?   @db.VarChar(50)
+  FWVER              String?   @db.VarChar(20)
+  FNP                Boolean?
+  FACE               Boolean?
+  SOUND              Boolean?
+  LED                Boolean?
+  BUZZER             Boolean?
+  USRTR              Boolean?
+  KPD                Boolean?
+  TPD                Boolean?
+  ZN                 Boolean?
+  DSP                Boolean?
+  MST                Boolean?
+  SLV                Boolean?
+  CRD                Boolean?
+  CSNCRD             Boolean?
+  WGDCRD             Boolean?
+  SMTCRD             Boolean?
+  WIFI               Boolean?
+  TAMP               Boolean?
+  IMGLOG             Boolean?
+  LFD                Boolean?
+  LCK                Boolean?
+  SSL_DEV            Boolean?
+  DATA_ENC           Boolean?
+  ALPHANUM           Boolean?
+  MBCRD              Boolean?
+  WGDIN              Boolean?
+  WGDOT              Boolean?
+  FUNC_LED           Boolean?
+  FUNC_AUTH          Boolean?
+  NR_INP             Int?      @db.TinyInt
+  NR_AUXINP          Int?      @db.TinyInt
+  NR_SPVSINP         Int?      @db.TinyInt
+  NR_OUP             Int?      @db.TinyInt
+  NR_REL             Int?      @db.TinyInt
+  NR_RS4CH           Int?      @db.TinyInt
+  NR_TNAKEY          Int?      @db.TinyInt
+  NR_WGDCH           Int?      @db.TinyInt
+  CREATED            DateTime? @default(now()) @db.DateTime(0)
+  COL_NUM            Int?
+  SUPPORTCARDSPEC    Int?      @default(0) @db.UnsignedInt
+  MX_SYNC_CNT        Int?      @default(500)
+  EXT_AUTHMODSPT     Boolean?
+  CRD_AUTHSPT        Boolean?
+  CRD_AUTHMSK        Int?
+  FNG_AUTHSPT        Boolean?
+  FNG_AUTHMSK        Int?
+  FACE_AUTHSPT       Boolean?
+  FACE_AUTHMSK       Int?
+  ID_AUTHSPT         Boolean?
+  ID_AUTHMSK         Int?
+  THR_AUTHSPT        Boolean?
+  MSK_AUTHSPT        Boolean?
+  INTELLIGENT_PDSPT  Boolean?
+  TRTASCSN_SPT       Boolean?
+  SMTCRDBTORD_SPT    Boolean?
+  PART_UPTSPT        Boolean?
+  RTSP_SPT           Boolean?
+  VOIP_SPT           Boolean?
+  MAX_VOIP_EXT_NUM   Int?
+  ENABLE_LICENSE_SPT Boolean?
+  VISUALQR_SPT       Boolean?
+  OSDP_SPT           Boolean?
+  BL_SPT             Boolean?
+  UZDOORLOCK_SPT     Boolean?
+  CSC_SPT            Boolean?
+  TOM_SPT            Boolean?
+  TOM_ENROLL_SPT     Boolean?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_devforcecmd {
+  DEVID     Int       @id
+  CMDTYPE   Int
+  RSLT      String?   @default(dbgenerated("(N)")) @db.Char(1)
+  createdAt DateTime? @db.DateTime(0)
+  updatedAt DateTime? @db.DateTime(0)
+}
+
+model t_devgr {
+  DEVGRUID       Int              @id @default(autoincrement())
+  NM             String?          @db.VarChar(48)
+  DSCR           String?          @db.VarChar(2048)
+  DEP            Int?
+  PARENTDEVGRUID Int?
+  ORD            Int?
+  DEL            String?          @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT          DateTime?        @db.DateTime(0)
+  t_atmsyndevgrs t_atmsyndevgrs[]
+  t_dev          t_dev[]
+  t_devgr        t_devgr?         @relation("t_devgrTot_devgr", fields: [PARENTDEVGRUID], references: [DEVGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DEVGRMHDEVGRASPARENT")
+  other_t_devgr  t_devgr[]        @relation("t_devgrTot_devgr")
+
+  @@index([PARENTDEVGRUID], map: "R_DEVGRMHDEVGRASPARENT")
+  @@index([DEL], map: "T_DEVGR_DEL_INDEX")
+}
+
+model t_devoprmd {
+  DEVUID Int
+  OPRMD  Int
+  SCHUID Int?
+  t_dev  t_dev  @relation(fields: [DEVUID], references: [DEVID], onDelete: Cascade, map: "R_DEVHSDEVOPRMD")
+  t_sch  t_sch? @relation(fields: [SCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DEVOPRMDHSSCH")
+
+  @@id([DEVUID, OPRMD])
+  @@index([SCHUID], map: "R_DEVOPRMDHSSCH")
+}
+
+model t_devoprt {
+  USRUID     Int
+  DEVUID     Int
+  USRMNUPERM String?   @db.Char(1)
+  CFGMNUPERM String?   @db.Char(1)
+  RGDDT      DateTime? @db.DateTime(0)
+  t_dev      t_dev     @relation(fields: [DEVUID], references: [DEVID], onUpdate: Restrict, map: "R_DEVOPRTCMDEV")
+  t_usr      t_usr     @relation(fields: [USRUID], references: [USRUID], onUpdate: Restrict, map: "R_DEVOPRTISAUSR")
+
+  @@id([USRUID, DEVUID])
+  @@index([DEVUID], map: "R_DEVOPRTCMDEV")
+}
+
+model t_devrs4chns {
+  DEVID    Int
+  CHNNUM   Int
+  MODE     String? @db.Char(1)
+  BAUDRATE Int?
+  t_dev    t_dev   @relation(fields: [DEVID], references: [DEVID], onDelete: Cascade, map: "FK_T_DEVRS4CHNS")
+
+  @@id([DEVID, CHNNUM])
+}
+
+model t_devthm {
+  DEVUID        Int     @id
+  USETHMCAM     Int?
+  USECTG        Int?
+  TEMPTHOLDLOW  Int?
+  TEMPTHOLDHIGH Int?
+  USEAUDTEMP    String? @db.Char(1)
+  USETEMPPRESND String? @db.Char(1)
+  USEOLTHM      String? @db.Char(1)
+  TEMPCHKMOD    Int?
+  USEMASK       Int?
+  MASKDCTLVL    Int?
+  USEDNROI      String? @db.Char(1)
+  DIST          Int?
+  EMISSIVITY    Int?
+  ROIX          Int?
+  ROIY          Int?
+  ROIWIDTH      Int?
+  ROIHEIGHT     Int?
+  USEBODYCOMP   String? @db.Char(1)
+  COMPTEMP      Int?
+  t_dev         t_dev   @relation(fields: [DEVUID], references: [DEVID], onDelete: Cascade, map: "FK_T_DEVTHM_T_DEV")
+}
+
+model t_devtposdp {
+  DEVID         Int      @id
+  SN            Int?
+  DEVTYP        Int
+  ENBOSDP       Boolean? @db.Bit(1)
+  CONN          Boolean? @db.Bit(1)
+  CHNIDX        Int?
+  OSDPID        Int?
+  SUPREMASEARCH Boolean? @db.Bit(1)
+  ACTIVATE      Boolean? @db.Bit(1)
+  USESECURE     Boolean? @db.Bit(1)
+  VDCODE1       Int?
+  VDCODE2       Int?
+  VDCODE3       Int?
+  FWVER         Int?
+  MDNUM         Int?
+  MDVER         Int?
+  RDINFO        Boolean? @db.Bit(1)
+  MASTER_DEVID  Int?
+  BATTERYLEVEL  Int?
+  t_dev         t_dev?   @relation(fields: [MASTER_DEVID], references: [DEVID], onDelete: Cascade, map: "FK_T_DEVTPOSDP_T_DEV")
+
+  @@index([MASTER_DEVID], map: "FK_DEVTPOSDP_DEV")
+}
+
+model t_devtyp {
+  DEVTYPUID    Int     @id
+  MODELNM      String? @db.VarChar(48)
+  DSCR         String? @db.VarChar(2048)
+  MXCNCT       Int?
+  SPTMST       String? @db.Char(1)
+  SPTSLV       String? @db.Char(1)
+  INPPTNUM     Int?
+  OUPPTNUM     Int?
+  RELCNT       Int?
+  HSTMP        String? @db.Char(1)
+  TNAKEYNUM    Int?
+  TNAEXTKEYNUM Int?
+  RS4CHNUM     Int?
+  WGDCHNUM     Int?
+  JSNMSK       Int?    @db.UnsignedInt
+  SPVSINPPTNUM Int?    @default(0)
+  WHNSPTDNS    String? @db.Char(20)
+  SPTLFD       String? @default(dbgenerated("(N)")) @db.Char(1)
+  SPTIMGLG     String? @default(dbgenerated("(N)")) @db.Char(1)
+  SPTAUXINPPT  Int?    @default(0)
+  t_dev        t_dev[]
+}
+
+model t_devwgd {
+  DEVUID    Int       @id
+  WGDINOUT  Int?
+  WGDPLSWID Int?
+  WGDPLSITV Int?
+  USWGDBPS  String?   @db.Char(1)
+  WGDFMUID  Int?
+  ENBFACD   String?   @default(dbgenerated("(N)")) @db.Char(1)
+  WGDFACD   Int?
+  INPMSK    Int?
+  CRDMSK    Int?
+  CSNID     Int?
+  WGDOTIF   Int?
+  t_dev     t_dev     @relation(fields: [DEVUID], references: [DEVID], onDelete: Cascade, map: "R_DEVHSWGDFMT")
+  t_wgdfmt  t_wgdfmt? @relation(fields: [WGDFMUID], references: [WGDFMUID], onDelete: NoAction, onUpdate: NoAction, map: "R_WGDFMTIBTDEV")
+
+  @@index([WGDFMUID], map: "R_WGDFMTIBTDEV")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_dr {
+  DRUID                         Int              @id @default(autoincrement())
+  NM                            String?          @db.VarChar(48)
+  DSCR                          String?          @db.VarChar(2048)
+  DEL                           String?          @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT                         DateTime?        @db.DateTime(0)
+  DRGRUID                       Int?
+  OPDRTSS                       Int?             @default(3)
+  OPTMOSS                       Int?
+  RELOPCND                      Int?
+  INSDEVUID                     Int?
+  OUSDEVUID                     Int?
+  ULDSCHUID                     Int?
+  LCKDSCHUID                    Int?
+  APBTYP                        String?          @db.Char(1)
+  APBRESMM                      Int?
+  APBOPWHNDSCN                  String?          @db.Char(1)
+  DBLMDTMOSS                    Int?
+  DBLMDSCHUID                   Int?
+  RELDEVIDX                     Int?
+  RELIDX                        Int?
+  SNSDEVIDX                     Int?
+  SNSINPIDX                     Int?
+  SNSTYP                        String?          @db.Char(1)
+  EXTBTNDEVIDX                  Int?
+  EXTBTNINPIDX                  Int?
+  EXTBTNTYP                     String?          @db.Char(1)
+  STA                           Int?
+  LSTMOD                        Int?             @default(0)
+  LSTMODDT                      DateTime?        @db.DateTime(0)
+  DBLMDDEVOPT                   Int?             @default(0)
+  DBLMDAPRVTYP                  Int?             @default(0)
+  ISTLCK                        String?          @db.Char(1)
+  UNCNDLCK                      String?          @db.Char(1)
+  ATGDEVIDX                     Int?
+  ATGINPIDX                     Int?
+  ATGTYP                        String?          @db.Char(1)
+  APBUSESNS                     String?          @db.Char(1)
+  SIMUNLK                       String?          @db.Char(1)
+  t_acslvlitmdrs                t_acslvlitmdrs[]
+  t_almdr                       t_almdr[]
+  t_dblmdacsgrs                 t_dblmdacsgrs[]
+  t_dev_t_dr_INSDEVUIDTot_dev   t_dev?           @relation("t_dr_INSDEVUIDTot_dev", fields: [INSDEVUID], references: [DEVID], map: "R_DRHSDEVOTI")
+  t_dev_t_dr_OUSDEVUIDTot_dev   t_dev?           @relation("t_dr_OUSDEVUIDTot_dev", fields: [OUSDEVUID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_DRHSDEVOTO")
+  t_sch_t_dr_DBLMDSCHUIDTot_sch t_sch?           @relation("t_dr_DBLMDSCHUIDTot_sch", fields: [DBLMDSCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRHSSCHFDM")
+  t_sch_t_dr_LCKDSCHUIDTot_sch  t_sch?           @relation("t_dr_LCKDSCHUIDTot_sch", fields: [LCKDSCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRHSSCHFL")
+  t_sch_t_dr_ULDSCHUIDTot_sch   t_sch?           @relation("t_dr_ULDSCHUIDTot_sch", fields: [ULDSCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRHSSCHFU")
+  t_drgr                        t_drgr?          @relation(fields: [DRGRUID], references: [DRGRUID], map: "R_DRIBTDRGR")
+  t_drtrgact                    t_drtrgact[]     @ignore
+  t_drzn                        t_drzn?
+  t_faldrs                      t_faldrs[]
+  t_flkdrs                      t_flkdrs[]
+  t_fuldrs                      t_fuldrs[]
+  t_rmjb                        t_rmjb[]
+  t_zndr                        t_zndr[]
+
+  @@index([INSDEVUID], map: "R_DRHSDEVOTI")
+  @@index([OUSDEVUID], map: "R_DRHSDEVOTO")
+  @@index([DBLMDSCHUID], map: "R_DRHSSCHFDM")
+  @@index([LCKDSCHUID], map: "R_DRHSSCHFL")
+  @@index([ULDSCHUID], map: "R_DRHSSCHFU")
+  @@index([DRGRUID], map: "R_DRIBTDRGR")
+  @@index([DEL], map: "T_DR_DEL_INDEX")
+  @@index([DEL], map: "T_DR_IX_67594")
+  @@index([LSTMOD], map: "T_DR_LSTMOD_INDEX")
+  @@index([LSTMOD, RELDEVIDX, DEL], map: "T_DR_LSTMOD_RELDEVIDX_DEL_INDEX")
+  @@index([RELDEVIDX], map: "T_DR_RELDEVIDX_INDEX")
+  @@index([RELIDX], map: "T_DR_RELIDX_INDEX_2")
+}
+
+model t_drgr {
+  DRGRUID       Int           @id @default(autoincrement())
+  ORD           Int?
+  NM            String?       @db.VarChar(48)
+  DSCR          String?       @db.VarChar(2048)
+  DEP           Int?
+  PARENTDRGRUID Int?
+  DEL           String?       @db.Char(1)
+  DELDT         DateTime?     @db.DateTime(0)
+  t_acslvlitm   t_acslvlitm[]
+  t_dr          t_dr[]
+  t_drgr        t_drgr?       @relation("t_drgrTot_drgr", fields: [PARENTDRGRUID], references: [DRGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_RELATIONSHIP1")
+  other_t_drgr  t_drgr[]      @relation("t_drgrTot_drgr")
+  t_faldrgrs    t_faldrgrs[]
+  t_flkdrgrs    t_flkdrgrs[]
+  t_fuldrgrs    t_fuldrgrs[]
+
+  @@index([PARENTDRGRUID], map: "R_RELATIONSHIP1")
+  @@index([DEL], map: "T_DRGR_DEL_INDEX")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_drtrgact {
+  DRUID     Int
+  INPEVT    Int
+  OUPDEVID  Int?
+  OUPSIGUID Int?
+  OUPPT     Int?
+  OUPFNCMSK Int?
+  OUPPRIO   Int?
+  OUPTYP    Int?
+  DLY       Int?
+  SNDIDX    Int?
+  STPFLG    Int?
+  t_dr      t_dr      @relation(fields: [DRUID], references: [DRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRTRGACTIBTDR")
+  t_dev     t_dev?    @relation(fields: [OUPDEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_DRTRGACTMHDEV")
+  t_oupsig  t_oupsig? @relation(fields: [OUPSIGUID], references: [OUPSIGUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRTRGACTMHOUPSIG")
+
+  @@index([DRUID], map: "R_DRTRGACTIBTDR")
+  @@index([OUPDEVID], map: "R_DRTRGACTMHDEV")
+  @@index([OUPSIGUID], map: "R_DRTRGACTMHOUPSIG")
+  @@ignore
+}
+
+model t_drzn {
+  DRUID Int       @id
+  ZNUID Int
+  DEL   String?   @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT DateTime? @db.DateTime(0)
+  t_dr  t_dr      @relation(fields: [DRUID], references: [DRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRZNDRUID")
+  t_zn  t_zn      @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRZNZNUID")
+
+  @@index([ZNUID], map: "R_DRZNZNUID")
+}
+
+model t_dst {
+  DSTUID      Int     @id @default(autoincrement())
+  NM          String? @db.VarChar(48)
+  STTMONIDX   Int?
+  STTWKIDX    Int?
+  STTDYOFWEEK Int?
+  STTHR       Int?
+  STTMIN      Int?
+  ENDMONIDX   Int?
+  ENDWKIDX    Int?
+  ENDDYOFWEEK Int?
+  ENDHR       Int?
+  ENDMIN      Int?
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_elvt {
+  ELVTUID          Int                @id @default(autoincrement())
+  NM               String?            @db.VarChar(48)
+  DSCR             String?            @db.VarChar(2048)
+  DEL              String?            @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT            DateTime?          @db.DateTime(0)
+  ELVTGRUID        Int?
+  CTRLDEVUID       Int?
+  ATVTMOSS         Int?               @default(10)
+  DBLMDSCHUID      Int?
+  DBLMDTMOSS       Int?               @default(15)
+  DBLMDDEVOPT      Int?               @default(0)
+  DBLMDAPRVTYP     Int?               @default(0)
+  STA              Int?               @default(0)
+  LSTMOD           Int?               @default(0)
+  LSTMODDT         DateTime?          @db.DateTime(0)
+  t_dblmdflrgrs    t_dblmdflrgrs[]
+  t_dev            t_dev?             @relation(fields: [CTRLDEVUID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_ELVT_CTRLDEVUID")
+  t_sch            t_sch?             @relation(fields: [DBLMDSCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ELVT_DBLMDSCHUID")
+  t_elvtgr         t_elvtgr?          @relation(fields: [ELVTGRUID], references: [ELVTGRUID], map: "R_ELVT_ELVTGRUID")
+  t_elvtdevs       t_elvtdevs[]
+  t_elvttrgact     t_elvttrgact[]
+  t_falelvts       t_falelvts[]
+  t_flkelvts       t_flkelvts[]
+  t_flrlvlitmelvts t_flrlvlitmelvts[]
+  t_flrs           t_flrs[]
+  t_fulelvts       t_fulelvts[]
+  t_rmjbev         t_rmjbev[]
+  t_znelvt         t_znelvt[]
+
+  @@index([CTRLDEVUID], map: "R_ELVT_CTRLDEVUID")
+  @@index([DBLMDSCHUID], map: "R_ELVT_DBLMDSCHUID")
+  @@index([ELVTGRUID], map: "R_ELVT_ELVTGRUID")
+  @@index([LSTMOD], map: "T_ELVT_LSTMOD_INDEX")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_elvtdevs {
+  ELVTUID Int
+  DEVUID  Int
+  IDX     Int?
+  TYP     Int
+  SWT     Int?
+  t_dev   t_dev  @relation(fields: [DEVUID], references: [DEVID], onUpdate: Restrict, map: "R_ELVTRDS_DEVUID")
+  t_elvt  t_elvt @relation(fields: [ELVTUID], references: [ELVTUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ELVTRDS_ELVTUID")
+
+  @@id([ELVTUID, DEVUID, TYP])
+  @@index([DEVUID], map: "R_ELVTRDS_DEVUID")
+  @@index([ELVTUID], map: "R_ELVTRDS_ELVTUID")
+  @@index([TYP], map: "R_ELVTRDS_TYP")
+  @@index([IDX], map: "T_ELVTDEVS_IDX_INDEX")
+}
+
+model t_elvtgr {
+  ELVTGRUID       Int           @id @default(autoincrement())
+  ORD             Int?
+  NM              String?       @db.VarChar(48)
+  DSCR            String?       @db.VarChar(2048)
+  DEP             Int?
+  PARENTELVTGRUID Int?
+  DEL             String?       @db.Char(1)
+  DELDT           DateTime?     @db.DateTime(0)
+  t_elvt          t_elvt[]
+  t_elvtgr        t_elvtgr?     @relation("t_elvtgrTot_elvtgr", fields: [PARENTELVTGRUID], references: [ELVTGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ELVTGR_PARENTELVTGRUID")
+  other_t_elvtgr  t_elvtgr[]    @relation("t_elvtgrTot_elvtgr")
+  t_flrlvlitm     t_flrlvlitm[]
+
+  @@index([PARENTELVTGRUID], map: "R_ELVTGR_PARENTELVTGRUID")
+}
+
+model t_elvttrgact {
+  ELVTUID                            Int
+  IDX                                String    @db.Char(20)
+  INPDEVID                           Int?
+  INPTYP                             Int?
+  INPPT                              Int?
+  INPSWT                             String?   @db.Char(1)
+  INPDRTMS                           Int?
+  INPSCHUID                          Int?
+  INPEVT                             Int?
+  OUPDEVID                           Int?
+  OUPSIGUID                          Int?
+  OUPPT                              Int?
+  OUPFNCMSK                          Int?
+  OUPPRIO                            Int?
+  OUPTYP                             Int?
+  t_elvt                             t_elvt    @relation(fields: [ELVTUID], references: [ELVTUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DEVHSELVTTRGACT")
+  t_sch                              t_sch?    @relation(fields: [INPSCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DEVINPHSSCHELVTTRGACT")
+  t_evttyp                           t_evttyp? @relation(fields: [INPEVT], references: [EVT], onDelete: NoAction, onUpdate: NoAction, map: "R_ELVTTRGACTHAVEEVTTYP")
+  t_dev_t_elvttrgact_INPDEVIDTot_dev t_dev?    @relation("t_elvttrgact_INPDEVIDTot_dev", fields: [INPDEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_ELVTTRGACTHSDEVFORINP")
+  t_dev_t_elvttrgact_OUPDEVIDTot_dev t_dev?    @relation("t_elvttrgact_OUPDEVIDTot_dev", fields: [OUPDEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_ELVTTRGACTHSDEVFOROUP")
+  t_oupsig                           t_oupsig? @relation(fields: [OUPSIGUID], references: [OUPSIGUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ELVTTRGACTHSOUPSIG")
+
+  @@id([IDX, ELVTUID])
+  @@unique([INPEVT, ELVTUID, INPPT, INPDEVID], map: "UNIACTION")
+  @@index([ELVTUID], map: "R_DEVHSELVTTRGAC")
+  @@index([INPSCHUID], map: "R_DEVINPHSSCHELVTTRGACT")
+  @@index([INPDEVID], map: "R_ELVTTRGACTHSDEVFORINP")
+  @@index([OUPDEVID], map: "R_ELVTTRGACTHSDEVFOROUP")
+  @@index([OUPSIGUID], map: "R_ELVTTRGACTHSOUPSIG")
+}
+
+model t_email_content {
+  ID             Int     @id
+  TITLE          String? @db.VarChar(255)
+  CONTENT        String? @db.Text
+  COMPANY_NAME   String? @db.VarChar(255)
+  COMPANY_LOGO   String? @db.MediumText
+  ADMIN_CONTACT  String? @db.Text
+  USEMAILSETTING Int     @default(1)
+  POLICY         String? @db.Text
+}
+
+model t_emlst {
+  USRUID String @id @db.VarChar(128)
+  VSST   Int
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_encmgr {
+  MigrationType Int?
+  TBNM          String?   @db.VarChar(255)
+  CLMNNM        String?   @db.VarChar(255)
+  TotalCount    Int?
+  ExceptCount   Int?
+  NULLCount     Int?
+  PrevCount     Int?
+  FailCount     Int?
+  EncCount      Int?
+  StartTime     DateTime? @db.Date
+  EndTime       DateTime? @db.Date
+  Progress      Int?
+  ConfigFile    String?   @db.VarChar(255)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_erldev {
+  DEVID     Int
+  DEVTYPUID Int
+
+  @@ignore
+}
+
+model t_etrdevs {
+  ZNUID  Int
+  DEVUID Int
+  IDX    Int
+  RGDDT  DateTime? @db.DateTime(0)
+  t_dev  t_dev     @relation(fields: [DEVUID], references: [DEVID], onUpdate: Restrict, map: "R_DEVIBTETRDEVS")
+  t_zn   t_zn      @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNAPBHSETRDEVS")
+
+  @@id([ZNUID, DEVUID, IDX])
+  @@index([DEVUID], map: "R_DEVIBTETRDEVS")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_evtflt {
+  DEVUID Int
+  IDX    Int
+  EVT    Int?
+  SCHUID Int?
+  t_dev  t_dev  @relation(fields: [DEVUID], references: [DEVID], onUpdate: Restrict, map: "R_DEVHAVEEVTFLTIFA2")
+  t_sch  t_sch? @relation(fields: [SCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_EVTFLTHAVESCHTOOPERATE")
+
+  @@id([DEVUID, IDX])
+  @@index([SCHUID], map: "R_EVTFLTHAVESCHTOOPERATE")
+}
+
+model t_evtspc {
+  ID      Int       @id @default(autoincrement())
+  NAME    String    @db.VarChar(100)
+  HEX     String    @unique(map: "HEX") @db.VarChar(10)
+  DEC     Int       @unique(map: "DEC")
+  AUTH    Boolean
+  USER    Boolean
+  DEV     Boolean
+  DR      Boolean
+  ZN      Boolean
+  LIFT    Boolean
+  BIOSTAR Boolean
+  CREATED DateTime  @db.DateTime(0)
+  UPDATED DateTime? @db.DateTime(0)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_evttyp {
+  EVT          Int            @id
+  NM           String?        @db.VarChar(48)
+  DSCR         String?        @db.VarChar(2048)
+  PDFDALM      String?        @db.Char(1)
+  ALTBL        String?        @db.Char(1)
+  ALTNM        String?        @db.VarChar(48)
+  ALTMSG       String?        @db.VarChar(2048)
+  PLYOPT       Int?
+  SNDUID       Int?
+  GENTBL       String         @default(dbgenerated("(Y)")) @db.Char(1)
+  t_almsetevt  t_almsetevt[]
+  t_elvttrgact t_elvttrgact[]
+  t_snd        t_snd?         @relation(fields: [SNDUID], references: [SNDUID], onDelete: NoAction, onUpdate: NoAction, map: "R_EVTTYPCANHASSND")
+  t_trgact     t_trgact[]
+
+  @@index([SNDUID], map: "R_EVTTYPCANHASSND")
+}
+
+model t_exdevs {
+  ZNUID  Int
+  DEVUID Int
+  IDX    Int
+  RGDDT  DateTime? @db.DateTime(0)
+  t_dev  t_dev     @relation(fields: [DEVUID], references: [DEVID], onUpdate: Restrict, map: "R_DEVIBTEXDEVS")
+  t_zn   t_zn      @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNAPBHSEXDEVS")
+
+  @@id([ZNUID, DEVUID, IDX])
+  @@index([DEVUID], map: "R_DEVIBTEXDEVS")
+}
+
+model t_extsys {
+  SYSUID Int     @id @default(autoincrement())
+  NM     String? @db.VarChar(48)
+  PKEY   Bytes?
+}
+
+model t_failsyncacsgrupdate {
+  UID      Int     @id @default(autoincrement())
+  DEVID    BigInt?
+  ACSGRUID Int?
+  OPR      Int?    @db.TinyInt
+  RETRYCNT Int?    @default(0) @db.TinyInt
+
+  @@index([DEVID], map: "R_FAILSYNCACSGRUPDATE_DEVID")
+  @@index([OPR], map: "R_FAILSYNCACSGRUPDATE_OPR")
+  @@index([DEVID, ACSGRUID], map: "T_FAILSYNCACSGRUPDATE_ACSGRUID_DEVID_INDEX")
+  @@index([DEVID, RETRYCNT], map: "T_FAILSYNCACSGRUPDATE_DEVID_RETRYCNT_INDEX")
+}
+
+model t_failsyncacslvlupdate {
+  UID       Int     @id @default(autoincrement())
+  DEVID     BigInt?
+  ACSLVLUID Int?
+  OPR       Int?    @db.TinyInt
+  RETRYCNT  Int?    @default(0) @db.TinyInt
+
+  @@index([DEVID], map: "R_FAILSYNCACSLVLUPDATE_DEVID")
+  @@index([OPR], map: "R_FAILSYNCACSLVLUPDATE_OPR")
+  @@index([DEVID, ACSLVLUID], map: "T_FAILSYNCACSLVLUPDATE_DEVID_ACSLVLUID_INDEX")
+  @@index([DEVID, RETRYCNT], map: "T_FAILSYNCACSLVLUPDATE_DEVID_RETRYCNT_INDEX")
+}
+
+model t_failsyncflrlvlupdate {
+  UID       Int     @id @default(autoincrement())
+  DEVID     BigInt?
+  FLRLVLUID Int?
+  OPR       Int?    @db.TinyInt
+  RETRYCNT  Int?    @default(0) @db.TinyInt
+
+  @@index([DEVID], map: "R_FAILSYNCACSLVLUPDATE_DEVID")
+  @@index([OPR], map: "R_FAILSYNCACSLVLUPDATE_OPR")
+  @@index([DEVID, FLRLVLUID], map: "T_FAILSYNCFLRLVLUPDATE_DEVID_FLRLVLUID_INDEX")
+  @@index([DEVID, RETRYCNT], map: "T_FAILSYNCFLRLVLUPDATE_DEVID_RETRYCNT_INDEX")
+}
+
+model t_failsyncusrupdate {
+  UID      Int     @id @default(autoincrement())
+  DEVID    BigInt?
+  USRID    String? @db.Char(128)
+  OPR      Int?    @db.TinyInt
+  RETRYCNT Int?    @default(0) @db.TinyInt
+
+  @@index([DEVID], map: "R_FAILSYNCUSRUPDATE_DEVID")
+  @@index([OPR], map: "R_FAILSYNCUSRUPDATE_OPR")
+  @@index([DEVID, RETRYCNT], map: "T_FAILSYNCUSRUPDATE_DEVID_RETRYCNT_INDEX")
+  @@index([USRID, DEVID], map: "T_FAILSYNCUSRUPDATE_USRID_DEVID_INDEX")
+}
+
+model t_faldrgrs {
+  ZNUID   Int
+  DRGRUID Int
+  IDX     Int
+  RGDDT   DateTime? @db.DateTime(0)
+  t_drgr  t_drgr    @relation(fields: [DRGRUID], references: [DRGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRGRIBTFALDRGRS")
+  t_znfal t_znfal   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFALHSFALDRGRS")
+
+  @@id([ZNUID, DRGRUID, IDX])
+  @@index([DRGRUID], map: "R_DRGRIBTFALDRGRS")
+}
+
+model t_faldrs {
+  ZNUID   Int
+  DRUID   Int
+  IDX     Int
+  RGDDT   DateTime? @db.DateTime(0)
+  t_dr    t_dr      @relation(fields: [DRUID], references: [DRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRIBTFALDRS")
+  t_znfal t_znfal   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFALHSFALDRS")
+
+  @@id([ZNUID, DRUID, IDX])
+  @@index([DRUID], map: "R_DRIBTFALDRS")
+}
+
+model t_falelvts {
+  ZNUID   Int
+  ELVTUID Int
+  IDX     Int
+  RGDDT   DateTime? @db.DateTime(0)
+  t_elvt  t_elvt    @relation(fields: [ELVTUID], references: [ELVTUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ELVTIBTFALELVTS")
+  t_znfal t_znfal   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFALHSFALELVTS")
+
+  @@id([ZNUID, ELVTUID, IDX])
+  @@index([ELVTUID], map: "R_ELVTIBTFALELVTS")
+}
+
+model t_fctmpl {
+  FCTMPLUID Int     @id @default(autoincrement())
+  USRUID    Int?
+  FCIDX     Int
+  TMPLIDX   Int
+  TMPL      Bytes?
+  CHS       String? @db.VarChar(40)
+  t_usr     t_usr?  @relation(fields: [USRUID], references: [USRUID], onDelete: Restrict, onUpdate: Restrict, map: "R_CHECKFCTMPLDUPLICATED")
+
+  @@unique([TMPLIDX, USRUID, FCIDX], map: "FACE_TEMPLATE_IX")
+  @@index([USRUID], map: "R_CHECKFCTMPLDUPLICATED")
+}
+
+model t_flkbpacgr {
+  ZNUID    Int
+  ACSGRUID Int
+  IDX      Int
+  RGDDT    DateTime? @db.DateTime(0)
+  t_acsgr  t_acsgr   @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACGRIBTFLKBPACGR")
+  t_znflk  t_znflk   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFLKHSFLKBPACGR")
+
+  @@id([ZNUID, ACSGRUID, IDX])
+  @@index([ACSGRUID], map: "R_ACGRIBTFLKBPACGR")
+}
+
+model t_flkdrgrs {
+  ZNUID   Int
+  DRGRUID Int
+  IDX     Int
+  RGDDT   DateTime? @db.DateTime(0)
+  t_drgr  t_drgr    @relation(fields: [DRGRUID], references: [DRGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRGRIBTFLKDRGRS")
+  t_znflk t_znflk   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFLHSFLKDRGRS")
+
+  @@id([ZNUID, DRGRUID, IDX])
+  @@index([DRGRUID], map: "R_DRGRIBTFLKDRGRS")
+}
+
+model t_flkdrs {
+  ZNUID   Int
+  DRUID   Int
+  IDX     Int
+  RGDDT   DateTime? @db.DateTime(0)
+  t_dr    t_dr      @relation(fields: [DRUID], references: [DRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRIBTFLKDRS")
+  t_znflk t_znflk   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFLKHSFLKDRS")
+
+  @@id([ZNUID, DRUID, IDX])
+  @@index([DRUID], map: "R_DRIBTFLKDRS")
+}
+
+model t_flkelvts {
+  ZNUID   Int
+  ELVTUID Int
+  IDX     Int
+  RGDDT   DateTime? @db.DateTime(0)
+  t_elvt  t_elvt    @relation(fields: [ELVTUID], references: [ELVTUID], onDelete: NoAction, onUpdate: NoAction, map: "R_EVLTIBTFLKEVLTS")
+  t_znflk t_znflk   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFLKHSFLKEVLTS")
+
+  @@id([ZNUID, ELVTUID, IDX])
+  @@index([ELVTUID], map: "R_DRIBTFLKEVLTS")
+}
+
+model t_flrgrlvls {
+  ACSGRUID  Int
+  FLRLVLUID Int
+  t_acsgr   t_acsgr  @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_FLRGRLVLS_ACSGRUID")
+  t_flrlvl  t_flrlvl @relation(fields: [FLRLVLUID], references: [FLRLVLUID], onDelete: NoAction, onUpdate: NoAction, map: "R_FLRGRLVLS_FLRLVLUID")
+
+  @@id([ACSGRUID, FLRLVLUID])
+  @@index([FLRLVLUID], map: "R_FLRGRLVLS_FLRLVLUID")
+}
+
+model t_flrlvl {
+  FLRLVLUID    Int            @id @default(autoincrement())
+  NM           String?        @db.VarChar(48)
+  DSCR         String?        @db.VarChar(2048)
+  DEL          String?        @db.Char(1)
+  DELDT        DateTime?      @db.DateTime(0)
+  LSTMOD       Int?
+  LSTMODDT     DateTime?      @db.DateTime(0)
+  t_flrgrlvls  t_flrgrlvls[]
+  t_flrlvlitms t_flrlvlitms[]
+
+  @@index([LSTMOD], map: "T_FLRLVL_LSTMOD_INDEX")
+}
+
+model t_flrlvlitm {
+  FLRLVLITMUID     Int                @id @default(autoincrement())
+  ELVTGRUID        Int?
+  SCHUID           Int?
+  t_elvtgr         t_elvtgr?          @relation(fields: [ELVTGRUID], references: [ELVTGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_FLRLVLITM_ELVTGRUID")
+  t_sch            t_sch?             @relation(fields: [SCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_FLRLVLITM_SCHUID")
+  t_flrlvlitmelvts t_flrlvlitmelvts[]
+  t_flrlvlitms     t_flrlvlitms[]
+
+  @@index([ELVTGRUID], map: "R_FLRLVLITM_ELVTGRUID")
+  @@index([SCHUID], map: "R_FLRLVLITM_SCHUID")
+}
+
+model t_flrlvlitmelvts {
+  FLRLVLITMUID Int
+  ELVTUID      Int
+  FLRUID       Int
+  t_elvt       t_elvt      @relation(fields: [ELVTUID], references: [ELVTUID], onDelete: NoAction, onUpdate: NoAction, map: "R_FLRLVLITMELVTS_ELVTUID")
+  t_flrlvlitm  t_flrlvlitm @relation(fields: [FLRLVLITMUID], references: [FLRLVLITMUID], onDelete: NoAction, onUpdate: NoAction, map: "R_FLRLVLITMELVTS_FLRLVLITMUID")
+  t_flrs       t_flrs      @relation(fields: [FLRUID], references: [FLRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_FLRLVLITMELVTS_FLRUID")
+
+  @@id([FLRLVLITMUID, ELVTUID, FLRUID])
+  @@index([ELVTUID], map: "R_FLRLVLITMELVTS_ELVTUID")
+  @@index([FLRUID], map: "R_FLRLVLITMELVTS_FLRUID")
+}
+
+model t_flrlvlitms {
+  FLRLVLUID    Int
+  FLRLVLITMUID Int
+  t_flrlvlitm  t_flrlvlitm @relation(fields: [FLRLVLITMUID], references: [FLRLVLITMUID], onDelete: NoAction, onUpdate: NoAction, map: "R_FLRLVLITMS_FLRLVLITMUID")
+  t_flrlvl     t_flrlvl    @relation(fields: [FLRLVLUID], references: [FLRLVLUID], onDelete: NoAction, onUpdate: NoAction, map: "R_FLRLVLITMS_FLRLVLUID")
+
+  @@id([FLRLVLUID, FLRLVLITMUID])
+  @@index([FLRLVLITMUID], map: "R_FLRLVLITMS_FLRLVLITMUID")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_flrlvlsent {
+  DEVICEID_FLRLVLUID String? @db.Char(50)
+
+  @@ignore
+}
+
+model t_flrs {
+  FLRUID           Int                @id @default(autoincrement())
+  ELVTUID          Int
+  DEVUID           Int?
+  NM               String?            @db.VarChar(48)
+  IDX              Int?
+  DSCR             String?            @db.VarChar(2048)
+  FLR              Int?
+  ORD              Int?
+  STA              Int?               @default(0)
+  DEL              String?            @db.Char(1)
+  LSTMODDT         DateTime?          @db.DateTime(0)
+  t_flrlvlitmelvts t_flrlvlitmelvts[]
+  t_dev            t_dev?             @relation(fields: [DEVUID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_FLRS_DEVUID")
+  t_elvt           t_elvt             @relation(fields: [ELVTUID], references: [ELVTUID], onDelete: NoAction, onUpdate: NoAction, map: "R_FLRS_ELVTUID")
+
+  @@unique([FLRUID, ELVTUID], map: "FLRUID")
+  @@index([DEVUID], map: "R_FLRS_DEVUID")
+  @@index([ELVTUID], map: "R_FLRS_ELVTUID")
+  @@index([FLRUID], map: "R_FLRS_FLRUID")
+  @@index([DEL], map: "T_FLRS_DEL_INDEX")
+  @@index([IDX], map: "T_FLRS_IDX_INDEX")
+}
+
+model t_fngptmpl {
+  FNGPUID Int     @id @default(autoincrement())
+  USRUID  Int?
+  FNGPIDX Int
+  DUR     String? @db.Char(1)
+  TMPL0   Bytes?
+  TMPL1   Bytes?
+  CHS     String? @db.VarChar(40)
+  LSTMOD  String? @db.Char(40)
+  t_usr   t_usr?  @relation(fields: [USRUID], references: [USRUID], onDelete: Restrict, onUpdate: Restrict, map: "R_CHECKFNGPTMPLDUPLICATED")
+
+  @@unique([USRUID, FNGPIDX], map: "FINGERPRINT_IX")
+  @@index([LSTMOD], map: "T_FNGPTMPL_LSTMOD_INDEX")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_fngptmplver {
+  LSTMOD Decimal @db.Decimal(38, 0)
+
+  @@ignore
+}
+
+model t_fulacgrs {
+  ZNUID    Int
+  ACSGRUID Int
+  IDX      Int
+  RGDDT    DateTime? @db.DateTime(0)
+  t_acsgr  t_acsgr   @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSGRIBTFULACGRS")
+  t_znful  t_znful   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFULHSFULACGRS")
+
+  @@id([ZNUID, ACSGRUID, IDX])
+  @@index([ACSGRUID], map: "R_ACSGRIBTFULACGRS")
+}
+
+model t_fuldrgrs {
+  ZNUID   Int
+  DRGRUID Int
+  t_drgr  t_drgr  @relation(fields: [DRGRUID], references: [DRGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRGRIBTFULDRGRS")
+  t_znful t_znful @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFULHSFULDRGRS")
+
+  @@id([ZNUID, DRGRUID])
+  @@index([DRGRUID], map: "R_DRGRIBTFULDRGRS")
+}
+
+model t_fuldrs {
+  ZNUID   Int
+  DRUID   Int
+  IDX     Int
+  RGDDT   DateTime? @db.DateTime(0)
+  t_dr    t_dr      @relation(fields: [DRUID], references: [DRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DRIBTFULDRS")
+  t_znful t_znful   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFULHSFULDRS")
+
+  @@id([ZNUID, DRUID, IDX])
+  @@index([DRUID], map: "R_DRIBTFULDRS")
+}
+
+model t_fulelvts {
+  ZNUID   Int
+  ELVTUID Int
+  IDX     Int
+  RGDDT   DateTime? @db.DateTime(0)
+  t_elvt  t_elvt    @relation(fields: [ELVTUID], references: [ELVTUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ELVTIBTFULELVTS")
+  t_znlul t_znlul   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFALHSFULELVTS")
+
+  @@id([ZNUID, ELVTUID, IDX])
+  @@index([ELVTUID], map: "R_ELVTIBTFULELVTS")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model t_grm {
+  GRMUID    Int       @id @default(autoincrement())
+  NM        String?   @db.VarChar(48)
+  ST_W      Int
+  ST_H      Int
+  X         Int
+  Y         Int
+  W         Int
+  H         Int
+  SX        Float     @db.Float
+  SY        Float     @db.Float
+  pth       String    @db.VarChar(50)
+  PGRMGRUID Int?
+  DEL       String?   @db.Char(1)
+  DELDT     DateTime? @db.DateTime(0)
+  t_grmgr   t_grmgr?  @relation(fields: [PGRMGRUID], references: [GRMGRUID], onDelete: NoAction, onUpdate: NoAction, map: "FK_t_graphicmap_t_graphicmapgr")
+  t_grmel   t_grmel[]
+
+  @@index([PGRMGRUID], map: "FK_t_graphicmap_t_graphicmapgr")
+}
+
+model t_grmel {
+  GRMELUID   Int          @id @default(autoincrement())
+  ELTYPE     Int?
+  NM         String?      @db.VarChar(48)
+  TGTUID     Int
+  x          Int
+  y          Int
+  Z_INDEX    Int
+  PGRMUID    Int?
+  DEL        String?      @db.Char(1)
+  DELDT      DateTime?    @db.DateTime(0)
+  t_grm      t_grm?       @relation(fields: [PGRMUID], references: [GRMUID], onDelete: Cascade, map: "FK_t_grmel_t_grm")
+  t_grmeltyp t_grmeltyp?  @relation(fields: [ELTYPE], references: [GRMELTYPEUID], onDelete: NoAction, onUpdate: NoAction, map: "FK_t_grmel_t_grmeltyp")
+  t_grmelvid t_grmelvid[]
+
+  @@index([PGRMUID], map: "FK_t_grmel_t_grm")
+  @@index([ELTYPE], map: "FK_t_grmel_t_grmeltyp")
+}
+
+model t_grmeltyp {
+  GRMELTYPEUID Int       @id @default(autoincrement())
+  DSCR         String    @db.VarChar(50)
+  t_grmel      t_grmel[]
+}
+
+model t_grmelvid {
+  GRMELVIDUID Int       @id @default(autoincrement())
+  PGRMELUID   Int
+  USRUID      Int
+  X           Int
+  Y           Int
+  W           Int
+  H           Int
+  Z_INDEX     Int
+  NVRID       Int
+  CHANNEL     Int
+  DISPLAY     String?   @db.Char(1)
+  DEL         String?   @db.Char(1)
+  DELDT       DateTime? @db.DateTime(0)
+  t_usr       t_usr     @relation(fields: [USRUID], references: [USRUID], onDelete: Cascade, map: "FK_t_grmelvid_T_USR")
+  t_grmel     t_grmel   @relation(fields: [PGRMELUID], references: [GRMELUID], onDelete: Cascade, map: "FK_t_grmelvid_t_grmel")
+
+  @@index([USRUID], map: "FK_t_grmelvid_T_USR")
+  @@index([PGRMELUID], map: "FK_t_grmelvid_t_grmel")
+}
+
+model t_grmgr {
+  GRMGRUID  Int       @id @default(autoincrement())
+  ORD       Int?
+  NM        String?   @db.VarChar(48)
+  DSCR      String?   @db.VarChar(2048)
+  DEP       Int?
+  PGRMGRUID Int?
+  DEL       String?   @db.Char(1)
+  DELDT     DateTime? @db.DateTime(0)
+  t_grm     t_grm[]
+}
+
+model t_hol {
+  HOLGRUID Int
+  IDX      Int
+  NM       String?   @db.VarChar(48)
+  RPTTYP   Int?
+  RPTITV   Int?
+  STTDT    DateTime? @db.DateTime(0)
+  DY       Int?
+  MON      Int?
+  WK       Int?
+  DYOFWK   Int?
+  DRT      Int?
+  t_holgr  t_holgr   @relation(fields: [HOLGRUID], references: [HOLGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_HOLGRHSHOL")
+
+  @@id([IDX, HOLGRUID])
+  @@index([HOLGRUID], map: "R_HOLGRHSHOL")
+}
+
+model t_holgr {
+  HOLGRUID Int        @id @default(autoincrement())
+  NM       String?    @db.VarChar(48)
+  DSCR     String?    @db.VarChar(2048)
+  DEL      String?    @db.Char(1)
+  DELDT    DateTime?  @db.DateTime(0)
+  LSTMOD   Int?
+  LSTMODDT DateTime?  @db.DateTime(0)
+  t_hol    t_hol[]
+  t_holsch t_holsch[]
+
+  @@index([LSTMOD], map: "T_HOLGR_LSTMOD_INDEX")
+}
+
+model t_holsch {
+  HOLSCHUID      Int              @id
+  SCHUID         Int?
+  HOLGRUID       Int?
+  IDX            Int
+  t_holgr        t_holgr?         @relation(fields: [HOLGRUID], references: [HOLGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_HOLGRIBTHOLSCH")
+  t_sch          t_sch?           @relation(fields: [SCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_SCHHSHOLSCH")
+  t_holschtmprds t_holschtmprds[]
+
+  @@unique([IDX, SCHUID, HOLGRUID], map: "UNI_IDX")
+  @@index([HOLGRUID], map: "R_HOLGRIBTHOLSCH")
+  @@index([SCHUID], map: "R_SCHHSHOLSCH")
+}
+
+model t_holschtmprds {
+  TMPRDUID  Int
+  HOLSCHUID Int
+  IDX       Int?
+  t_holsch  t_holsch @relation(fields: [HOLSCHUID], references: [HOLSCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_HOLSCHHSTMPRD")
+  t_tmprd   t_tmprd  @relation(fields: [TMPRDUID], references: [TMPRDUID], onDelete: NoAction, onUpdate: NoAction, map: "R_TMPRDIBTHOLSCH")
+
+  @@id([TMPRDUID, HOLSCHUID])
+  @@index([HOLSCHUID], map: "R_HOLSCHHSTMPRD")
+}
+
+model t_imglgjb {
+  IDX    Int     @id @default(autoincrement())
+  IMGDAT String? @db.VarChar(255)
+  RTCNT  Int?
+  RQT    String? @default(dbgenerated("(N)")) @db.Char(1)
+
+  @@index([IMGDAT], map: "IX_IMGLGJB_IMGDAT")
+  @@index([RQT], map: "T_IMGLGJB_RQT_INDEX")
+}
+
+model t_inpcfg {
+  DEVID     Int
+  INPIDX    Int
+  ENB       String? @db.Char(1)
+  SPINPIDX  Int?    @default(0)
+  SHRTMIN   Int?    @default(0)
+  SHRTMX    Int?    @default(0)
+  OPMIN     Int?    @default(0)
+  OPMX      Int?    @default(0)
+  ONMIN     Int?    @default(0)
+  ONMX      Int?    @default(0)
+  OFFMIN    Int?    @default(0)
+  OFFMX     Int?    @default(0)
+  INPTYP    Int     @default(1)
+  INPTYPCFG Int?
+  INPCFGUID Int     @unique(map: "UIX_INPCFG") @default(autoincrement())
+  DUR       Int?    @default(0)
+  SWCHTYP   Int?    @default(0)
+  t_dev     t_dev   @relation(fields: [DEVID], references: [DEVID], onUpdate: Restrict, map: "R_DEVHASINPCFG")
+
+  @@id([DEVID, INPIDX, INPTYP])
+}
+
+model t_inpcfgex {
+  INPCFGEXGUID Int     @default(autoincrement())
+  DEVID        Int
+  INPIDX       Int
+  INPNM        String? @db.VarChar(48)
+
+  @@id([DEVID, INPIDX])
+  @@index([INPCFGEXGUID], map: "INPCFGEXGUID")
+}
+
+model t_ledoup {
+  DEVUID    Int
+  DEVSTA    Int
+  CNT       Int?
+  LED1CLR   Int?
+  LED1DRTMS Int?
+  LED1DLYMS Int?
+  LED2CLR   Int?
+  LED2DRTMS Int?
+  LED2DLYMS Int?
+  LED3CLR   Int?
+  LED3DRTMS Int?
+  LED3DLYMS Int?
+  t_dev     t_dev @relation(fields: [DEVUID], references: [DEVID], onUpdate: Restrict, map: "R_DEVMHLEDOUPIBE")
+
+  @@id([DEVSTA, DEVUID])
+  @@index([DEVUID], map: "T_LEDOUP_IX_2013151290")
+}
+
+model t_lg202406 {
+  EVTLGUID    Int       @id @default(autoincrement())
+  SRVDT       DateTime? @db.DateTime(0)
+  DEVDT       Int?
+  DEVUID      Int
+  PKTDEVID    Int
+  DEVLGIDX    Decimal   @db.Decimal(38, 0)
+  IMGLGUID    String?   @db.Char(32)
+  USRID       String?   @db.Char(128)
+  USRGRUID    Int?
+  EVT         Int?
+  CRDSL       Int?
+  TNAKEY      Int?
+  DRUID       Int?
+  ZNUID       Int?
+  ELVTUID     Int?
+  DRUID1      Int?
+  DRUID2      Int?
+  DRUID3      Int?
+  IS_DST      Int?
+  TMZN_HALF   Int?
+  TMZN_HOUR   Int?
+  TMZN_NEGTV  Int?
+  USRUDTBYDEV String?   @db.Char(1)
+  HINT        String?   @db.VarChar(50)
+  TEMPER      Int?
+
+  @@unique([PKTDEVID, DEVLGIDX], map: "UNIQUE_DEVLOG")
+  @@index([DEVDT], map: "EVDT_UID_DT_T_LG202406_IX")
+  @@index([DEVUID], map: "IDX_DEVUID")
+  @@index([EVT], map: "IDX_EVT")
+  @@index([HINT], map: "IDX_HINT")
+  @@index([USRGRUID], map: "IDX_USRGRUID")
+  @@index([USRID], map: "IDX_USRID")
+  @@index([IMGLGUID], map: "IX_TN_DYN_T_LG202406_LG")
+}
+
+model t_lg202407 {
+  EVTLGUID    Int       @id @default(autoincrement())
+  SRVDT       DateTime? @db.DateTime(0)
+  DEVDT       Int?
+  DEVUID      Int
+  PKTDEVID    Int
+  DEVLGIDX    Decimal   @db.Decimal(38, 0)
+  IMGLGUID    String?   @db.Char(32)
+  USRID       String?   @db.Char(128)
+  USRGRUID    Int?
+  EVT         Int?
+  CRDSL       Int?
+  TNAKEY      Int?
+  DRUID       Int?
+  ZNUID       Int?
+  ELVTUID     Int?
+  DRUID1      Int?
+  DRUID2      Int?
+  DRUID3      Int?
+  IS_DST      Int?
+  TMZN_HALF   Int?
+  TMZN_HOUR   Int?
+  TMZN_NEGTV  Int?
+  USRUDTBYDEV String?   @db.Char(1)
+  HINT        String?   @db.VarChar(50)
+  TEMPER      Int?
+
+  @@unique([PKTDEVID, DEVLGIDX], map: "UNIQUE_DEVLOG")
+  @@index([DEVDT], map: "EVDT_UID_DT_T_LG202407_IX")
+  @@index([DEVUID], map: "IDX_DEVUID")
+  @@index([EVT], map: "IDX_EVT")
+  @@index([HINT], map: "IDX_HINT")
+  @@index([USRGRUID], map: "IDX_USRGRUID")
+  @@index([USRID], map: "IDX_USRID")
+  @@index([IMGLGUID], map: "IX_TN_DYN_T_LG202407_LG")
+}
+
+model t_lgalmtrstrc202406 {
+  EVTLGUID Int       @id @default(autoincrement())
+  ALMUID   Int
+  TRSDT    DateTime? @db.DateTime(0)
+  TRS      String?   @default(dbgenerated("(N)")) @db.Char(1)
+}
+
+model t_lgalmtrstrc202407 {
+  EVTLGUID Int       @id @default(autoincrement())
+  ALMUID   Int
+  TRSDT    DateTime? @db.DateTime(0)
+  TRS      String?   @default(dbgenerated("(N)")) @db.Char(1)
+}
+
+model t_lgtbidx {
+  TABLEIDXUID        Int       @id @default(autoincrement())
+  LGTABLENM          String?   @unique(map: "T_LGTBIDX_LGTABLENM_UINDEX") @db.VarChar(48)
+  LGIMGDATTABLENM    String?   @db.VarChar(48)
+  LGALMTRSTRCTABLENM String?   @db.VarChar(48)
+  ALMEVTTABLENM      String?   @db.VarChar(48)
+  STTDT              DateTime  @db.DateTime(0)
+  ENDDT              DateTime? @db.DateTime(0)
+  ISCUR              String?   @default(dbgenerated("(N)")) @db.Char(1)
+}
+
+model t_licenses {
+  DEVID            Int      @id
+  VISUAL_CAMERA_QR Boolean?
+  UZ_DOOR_LOCK     Boolean?
+}
+
+model t_lstlog {
+  DEVID   Int      @id
+  LSTLGID Decimal? @db.Decimal(38, 0)
+}
+
+model t_lstsynsta {
+  DEVID  Int   @id
+  USR    Int?
+  ACSGR  Int?
+  ACSLVL Int?
+  DR     Int?
+  SCH    Int?
+  HOLGR  Int?
+  BLKL   Int?
+  RMJB   Int?
+  ZN     Int?
+  RMJBZN Int?
+  EV     Int?
+  FLRLVL Int?
+  RMJBEV Int?
+  FCGR   Int?
+  t_dev  t_dev @relation(fields: [DEVID], references: [DEVID], onUpdate: Restrict, map: "R_DEVHAVELASTSYNSTATUS")
+
+  @@index([RMJBEV], map: "T_LSTSYNSTA_RMJBEV_INDEX")
+  @@index([RMJBZN], map: "T_LSTSYNSTA_RMJBZN_INDEX")
+  @@index([RMJB], map: "T_LSTSYNSTA_RMJB_INDEX")
+  @@index([USR], map: "T_LSTSYNSTA_USR_INDEX")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_lstusrauth {
+  USRID String? @unique(map: "USRID2") @db.VarChar(128)
+  DEVDT Int?
+
+  @@index([DEVDT], map: "DEVDT")
+  @@index([USRID], map: "USRID")
+  @@ignore
+}
+
+model t_lulacgrs {
+  ZNUID    Int
+  ACSGRUID Int
+  IDX      Int
+  RGDDT    DateTime? @db.DateTime(0)
+  t_acsgr  t_acsgr   @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ACSGRIBTLULACGRS")
+  t_znlul  t_znlul   @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNLULHSLULACGRS")
+
+  @@id([ZNUID, ACSGRUID, IDX])
+  @@index([ACSGRUID], map: "R_ACSGRIBTFULACGRS")
+}
+
+model t_mblcrd {
+  CRDUID    Int       @id
+  ENCDRW    String    @db.LongText
+  DSCRJSN   String    @db.LongText
+  ISSDDT    DateTime  @db.DateTime(0)
+  DNLDDT    DateTime? @db.DateTime(0)
+  DNLD      String    @default(dbgenerated("(N)")) @db.Char(1)
+  MBLUDID   String?   @db.Char(128)
+  USRUID    Int?
+  CRDLAYUID Int?
+  t_crdlay  t_crdlay? @relation(fields: [CRDLAYUID], references: [CRDLAYUID], onUpdate: Restrict, map: "FK_T_CRDLAYCRDLAYUID")
+  t_crd     t_crd     @relation(fields: [CRDUID], references: [CRDUID], onUpdate: Restrict, map: "R_MBLCRDISACRD")
+  t_usr     t_usr?    @relation(fields: [USRUID], references: [USRUID], onDelete: Restrict, onUpdate: Restrict, map: "R_MBLCRDISISSDTOUSR")
+
+  @@index([CRDLAYUID], map: "FK_T_CRDLAYCRDLAYUID")
+  @@index([USRUID], map: "R_MBLCRDISISSDTOUSR")
+}
+
+model t_mobile_credential {
+  MCUID      Int       @id @default(autoincrement())
+  APISNDDT   DateTime  @db.DateTime(0)
+  EMLSNDDT   DateTime? @db.DateTime(0)
+  USRID      String    @db.VarChar(32)
+  CRDID      String    @db.VarChar(128)
+  PASSCODE   String    @db.VarChar(128)
+  PORTALRSLT String    @db.Char(1)
+  EMLRSLT    String?   @db.Char(1)
+  EMLCNT     Int?
+}
+
+model t_mobile_picture_hash {
+  AUTHKEY    String    @id @db.VarChar(40)
+  USRID      String    @unique(map: "T_MOBILE_PICTURE_HASH_USRID") @db.VarChar(128)
+  USRUID     Int
+  NM         String?   @db.VarChar(255)
+  CREATETIME DateTime? @default(now()) @db.DateTime(0)
+  EXPIRETIME DateTime? @db.DateTime(0)
+}
+
+model t_mxdt {
+  MXOPTID Int     @id
+  VAL     String? @db.VarChar(128)
+}
+
+model t_nested_dev {
+  DEVID  Int       @id
+  NM     String?   @db.VarChar(48)
+  LFT    Int?
+  RGT    Int?
+  DEL    String?   @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT  DateTime? @db.DateTime(0)
+  LVL    Int?
+  PDEVID Int?
+
+  @@index([PDEVID], map: "IDX_ND_PDID")
+}
+
+model t_nested_devgr {
+  GRUID  Int       @id
+  NM     String?   @db.VarChar(48)
+  DSCR   String?   @db.VarChar(2048)
+  LFT    Int?
+  RGT    Int?
+  DEL    String?   @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT  DateTime? @db.DateTime(0)
+  LVL    Int?
+  PGRUID Int?
+
+  @@index([PGRUID], map: "IDX_NDG_PGRUID")
+}
+
+model t_nested_drgr {
+  GRUID  Int       @id
+  NM     String?   @db.VarChar(48)
+  DSCR   String?   @db.VarChar(2048)
+  LFT    Int?
+  RGT    Int?
+  DEL    String?   @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT  DateTime? @db.DateTime(0)
+  LVL    Int?
+  PGRUID Int?
+
+  @@index([PGRUID], map: "IDX_NDRG_PGRUID")
+}
+
+model t_nested_elvtgr {
+  GRUID  Int       @id
+  NM     String?   @db.VarChar(48)
+  DSCR   String?   @db.VarChar(2048)
+  LFT    Int?
+  RGT    Int?
+  DEL    String?   @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT  DateTime? @db.DateTime(0)
+  LVL    Int?
+  PGRUID Int?
+
+  @@index([PGRUID], map: "IDX_NEG_PGRUID")
+}
+
+model t_nested_grmgr {
+  GRUID  Int       @id
+  NM     String?   @db.VarChar(48)
+  LFT    Int?
+  RGT    Int?
+  DEL    String?   @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT  DateTime? @db.DateTime(0)
+  LVL    Int?
+  PGRUID Int?
+
+  @@index([PGRUID], map: "IDX_ND_PDID")
+}
+
+model t_nested_usrgr {
+  GRUID     Int       @id
+  NM        String?   @db.VarChar(48)
+  DSCR      String?   @db.VarChar(2048)
+  LFT       Int?
+  RGT       Int?
+  AUTHGRUID Int?
+  DEL       String?   @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT     DateTime? @db.DateTime(0)
+  LVL       Int?
+  PGRUID    Int?
+
+  @@index([PGRUID], map: "IDX_NUG_PGRUID")
+}
+
+model t_ntc {
+  ID    Int      @id @default(autoincrement())
+  NM    String   @db.VarChar(48)
+  DSCR  String?  @db.LongText
+  REGDT DateTime @db.DateTime(0)
+}
+
+model t_occpbpacgr {
+  ZNUID            Int
+  ACSGRUID         Int
+  IDX              Int
+  RGDDT            DateTime? @db.DateTime(0)
+  LAST_UPDATE_DATE DateTime? @db.DateTime(0)
+  t_zn             t_zn      @relation(fields: [ZNUID], references: [ZNUID], onDelete: Cascade, map: "R_ZNHASOCCPBPACGR")
+
+  @@id([ZNUID, ACSGRUID, IDX])
+}
+
+model t_oupsig {
+  OUPSIGUID    Int            @id @default(autoincrement())
+  NM           String?        @db.VarChar(48)
+  DLYMS        Int?
+  CNT          Int?
+  ONDRTMS      Int?
+  OFFDRTMS     Int?
+  t_almact     t_almact[]
+  t_drtrgact   t_drtrgact[]   @ignore
+  t_elvttrgact t_elvttrgact[]
+  t_trgact     t_trgact[]
+  t_zntrgact   t_zntrgact[]   @ignore
+}
+
+model t_perm {
+  PERMUID Int      @id @default(-1)
+  NM      String?  @db.VarChar(48)
+  DSCR    String?  @db.VarChar(2048)
+  PERMITM String?  @db.LongText
+  CRTDT   DateTime @default(now()) @db.DateTime(0)
+}
+
+model t_prf {
+  USRUID  Int     @id
+  LNG     String? @db.Char(5)
+  TMZN    String? @db.Char(6)
+  DPDONOS String? @db.Char(1)
+  DTFM    String? @db.Char(10)
+  TMFM    String? @db.Char(11)
+  DST1    Int?    @default(0)
+  DST2    Int?    @default(0)
+  t_usr   t_usr   @relation(fields: [USRUID], references: [USRUID], onDelete: Cascade, onUpdate: Restrict, map: "R_USRHSPREFERECEAAA")
+}
+
+model t_qcact {
+  QCACTUID    Int           @id @default(autoincrement())
+  NM          String?       @db.VarChar(48)
+  DSCR        String?       @db.VarChar(1000)
+  ORDNUM      Int?
+  STA         String?       @default(dbgenerated("(I)")) @db.Char(1)
+  CNFBR       String?       @default(dbgenerated("(N)")) @db.Char(1)
+  t_qcactalm  t_qcactalm[]
+  t_qcactperm t_qcactperm[]
+}
+
+model t_qcactalm {
+  QCACTALMUID Int       @id @default(autoincrement())
+  QCACTUID    Int?
+  QCALMUID    Int?
+  t_almset    t_almset? @relation(fields: [QCALMUID], references: [ALMSETUID], onDelete: NoAction, onUpdate: NoAction, map: "T_QCACTALM_FK_ALMSET")
+  t_qcact     t_qcact?  @relation(fields: [QCACTUID], references: [QCACTUID], onDelete: NoAction, onUpdate: NoAction, map: "T_QCACTALM_FK_QCACT")
+
+  @@index([QCALMUID], map: "T_QCACTALM_FK_ALMSET")
+  @@index([QCACTUID], map: "T_QCACTALM_FK_QCACT")
+}
+
+model t_qcactperm {
+  QCACTPERMUID Int      @id @default(autoincrement())
+  QCACTUID     Int?
+  QCPERMUID    Int?
+  t_qcact      t_qcact? @relation(fields: [QCACTUID], references: [QCACTUID], onDelete: NoAction, onUpdate: NoAction, map: "T_QCACTPERM_FK_QCACT")
+
+  @@index([QCACTUID], map: "T_QCACTPERM_FK_QCACT")
+}
+
+model t_rmjb {
+  LSTMOD   Int       @id @default(autoincrement())
+  LSTMODDT DateTime? @db.DateTime(0)
+  DRUID    Int?
+  DEVID    Int?
+  t_dev    t_dev?    @relation(fields: [DEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_RMJBCLDHVOFNADEV")
+  t_dr     t_dr?     @relation(fields: [DRUID], references: [DRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_RMJBCLDHVOFNADRFRRM")
+
+  @@index([DEVID], map: "R_RMJBCLDHVOFNADEV")
+  @@index([DRUID], map: "R_RMJBCLDHVOFNADRFRRM")
+}
+
+model t_rmjbev {
+  LSTMOD   Int       @id @default(autoincrement())
+  LSTMODDT DateTime? @db.DateTime(0)
+  ELVTUID  Int?
+  DEVID    Int?
+  t_dev    t_dev?    @relation(fields: [DEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_RMJBEVHAVEADEVASTARGET")
+  t_elvt   t_elvt?   @relation(fields: [ELVTUID], references: [ELVTUID], onDelete: NoAction, onUpdate: NoAction, map: "R_RMJBEVHAVEAEVTOREMOVE")
+
+  @@index([DEVID], map: "R_RMJBEVHAVEADEVASTARGET")
+  @@index([ELVTUID], map: "R_RMJBEVHAVEAEVTOREMOVE")
+}
+
+model t_rmjbzn {
+  LSTMOD   Int       @id @default(autoincrement())
+  LSTMODDT DateTime? @db.DateTime(0)
+  ZNUID    Int?
+  DEVID    Int?
+  t_dev    t_dev?    @relation(fields: [DEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_RMJBZNHAVEADEVASTARGET")
+  t_zn     t_zn?     @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_RMJBZNHAVEAZNTOREMOVE")
+
+  @@index([DEVID], map: "R_RMJBZNHAVEADEVASTARGET")
+  @@index([ZNUID], map: "R_RMJBZNHAVEAZNTOREMOVE")
+}
+
+model t_sch {
+  SCHUID                       Int            @id @default(autoincrement())
+  NM                           String?        @db.VarChar(48)
+  DSCR                         String?        @db.VarChar(2048)
+  USDLITER                     String?        @db.Char(1)
+  STTDT                        DateTime?      @db.DateTime(0)
+  DYSOFITER                    Int?
+  DEL                          String?        @db.Char(1)
+  DELDT                        DateTime?      @db.DateTime(0)
+  LSTMOD                       Int?
+  LSTMODDT                     DateTime?      @db.DateTime(0)
+  t_acslvlitm                  t_acslvlitm[]
+  t_almset                     t_almset[]
+  t_devoprmd                   t_devoprmd[]
+  t_dr_t_dr_DBLMDSCHUIDTot_sch t_dr[]         @relation("t_dr_DBLMDSCHUIDTot_sch")
+  t_dr_t_dr_LCKDSCHUIDTot_sch  t_dr[]         @relation("t_dr_LCKDSCHUIDTot_sch")
+  t_dr_t_dr_ULDSCHUIDTot_sch   t_dr[]         @relation("t_dr_ULDSCHUIDTot_sch")
+  t_elvt                       t_elvt[]
+  t_elvttrgact                 t_elvttrgact[]
+  t_evtflt                     t_evtflt[]
+  t_flrlvlitm                  t_flrlvlitm[]
+  t_holsch                     t_holsch[]
+  t_schdl                      t_schdl[]
+  t_takey                      t_takey[]
+  t_trgact                     t_trgact[]
+  t_znflk                      t_znflk[]
+  t_znful                      t_znful[]
+  t_znlul                      t_znlul[]
+
+  @@index([LSTMOD], map: "T_SCH_LSTMOD_INDEX")
+}
+
+model t_schdl {
+  SCHDLUID      Int             @id @default(autoincrement())
+  DYIDX         Int?
+  SCHUID        Int?
+  t_sch         t_sch?          @relation(fields: [SCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_SCHHSSCHDL")
+  t_schdltmprds t_schdltmprds[]
+  t_shf         t_shf[]
+
+  @@index([SCHUID], map: "R_SCHHSSCHDL")
+}
+
+model t_schdltmprds {
+  TMPRDUID Int
+  SCHDLUID Int
+  IDX      Int?
+  t_schdl  t_schdl @relation(fields: [SCHDLUID], references: [SCHDLUID], onDelete: NoAction, onUpdate: NoAction, map: "R_SCHDLHSTMPRD")
+  t_tmprd  t_tmprd @relation(fields: [TMPRDUID], references: [TMPRDUID], onDelete: NoAction, onUpdate: NoAction, map: "R_TMPRDIBTTMPRD")
+
+  @@id([TMPRDUID, SCHDLUID])
+  @@index([SCHDLUID], map: "R_SCHDLHSTMPRD")
+}
+
+model t_shf {
+  SHFUID        Int             @id
+  ISFXDSHF      String?         @db.Char(1)
+  CTRTMM        Int?
+  USDLROD       String?         @db.Char(1)
+  UNT           Int?
+  POI           Int?
+  SCHDLUID      Int?
+  t_schdl       t_schdl?        @relation(fields: [SCHDLUID], references: [SCHDLUID], onDelete: NoAction, onUpdate: NoAction, map: "R_SHFHSSCHDL")
+  t_shfgrshfs   t_shfgrshfs[]
+  t_shftmplshfs t_shftmplshfs[]
+
+  @@index([SCHDLUID], map: "R_SHFHSSCHDL")
+}
+
+model t_shfgr {
+  SHFGRUID    Int           @id
+  NM          String?       @db.VarChar(48)
+  DSCR        String?       @db.VarChar(2048)
+  SHFRULUID   Int?
+  t_shfrul    t_shfrul?     @relation(fields: [SHFRULUID], references: [SHFRULUID], onDelete: NoAction, onUpdate: NoAction, map: "R_SHFGRHSSHFRUL")
+  t_shfgrshfs t_shfgrshfs[]
+  t_shfgruss  t_shfgruss[]
+
+  @@index([SHFRULUID], map: "R_SHFGRHSSHFRUL")
+}
+
+model t_shfgrshfs {
+  SHFUID   Int
+  SHFGRUID Int
+  IDX      Int
+  RGDDT    DateTime? @db.DateTime(0)
+  STTDT    DateTime? @db.DateTime(0)
+  ENDDT    DateTime? @db.DateTime(0)
+  t_shfgr  t_shfgr   @relation(fields: [SHFGRUID], references: [SHFGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_SHFGRMHSHFGRSHFS")
+  t_shf    t_shf     @relation(fields: [SHFUID], references: [SHFUID], onDelete: NoAction, onUpdate: NoAction, map: "R_SHFGRSHFSHSSHF")
+
+  @@id([SHFUID, SHFGRUID, IDX])
+  @@index([SHFGRUID], map: "R_SHFGRMHSHFGRSHFS")
+}
+
+model t_shfgruss {
+  SHFGRUID Int
+  USRUID   Int
+  IDX      Int
+  RGDDT    DateTime? @db.DateTime(0)
+  t_shfgr  t_shfgr   @relation(fields: [SHFGRUID], references: [SHFGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_SHFGRHSSHFGRUSS")
+  t_usr    t_usr     @relation(fields: [USRUID], references: [USRUID], onUpdate: Restrict, map: "R_USRIBTSHFGRUSS")
+
+  @@id([SHFGRUID, USRUID, IDX])
+  @@index([USRUID], map: "R_USRIBTSHFGRUSS")
+}
+
+model t_shfrul {
+  SHFRULUID   Int       @id
+  NM          String?   @db.VarChar(48)
+  DSCR        String?   @db.VarChar(2048)
+  FRSINLSTOUT String?   @default(dbgenerated("(Y)")) @db.Char(1)
+  USBRKRUL    String?   @default(dbgenerated("(N)")) @db.Char(1)
+  BRKDDTMM    Int?      @default(0)
+  DISLEVTYP   String?   @default(dbgenerated("(Y)")) @db.Char(1)
+  t_shfgr     t_shfgr[]
+}
+
+model t_shftmplshfs {
+  SHFUID Int
+  IDX    Int
+  RGDDT  DateTime? @db.DateTime(0)
+  t_shf  t_shf     @relation(fields: [SHFUID], references: [SHFUID], onDelete: NoAction, onUpdate: NoAction, map: "R_SHFIBTSHFTMPLSHFS")
+
+  @@id([SHFUID, IDX])
+}
+
+model t_snd {
+  SNDUID   Int        @id @default(autoincrement())
+  FILNM    String?    @db.VarChar(255)
+  DSCR     String?    @db.VarChar(2048)
+  FILINF   String?    @db.VarChar(255)
+  SZ       Int?
+  t_evttyp t_evttyp[]
+}
+
+model t_syscfg {
+  SYSCFGUID Int     @id
+  NM        String? @db.VarChar(48)
+  VAL       String? @db.LongText
+}
+
+model t_takey {
+  DEVUID   Int
+  IDX      Int
+  ENB      String? @default(dbgenerated("(Y)")) @db.Char(1)
+  CAP      String? @db.VarChar(32)
+  CD       Int?    @default(0)
+  USREL    String? @db.Char(1)
+  ADDWRKTM String? @db.Char(1)
+  IGNEXC   String? @db.Char(1)
+  SCHUID   Int?
+  t_dev    t_dev   @relation(fields: [DEVUID], references: [DEVID], onDelete: Cascade, map: "R_DEVHSTAKEY")
+  t_sch    t_sch?  @relation(fields: [SCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_TAKEYHSSCHFAM")
+
+  @@id([DEVUID, IDX])
+  @@index([SCHUID], map: "R_TAKEYHSSCHFAM")
+}
+
+model t_tmapbbpacgr {
+  ZNUID    Int
+  ACSGRUID Int
+  IDX      Int
+  RGDDT    DateTime? @db.DateTime(0)
+  t_acsgr  t_acsgr   @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_TMAPBACSGRIBTBPACGR")
+  t_zn     t_zn      @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNTMAPBHSBPACGR")
+
+  @@id([ZNUID, IDX, ACSGRUID])
+  @@index([ACSGRUID], map: "R_TMAPBACSGRIBTBPACGR")
+}
+
+model t_tmprd {
+  TMPRDUID       Int              @id @default(autoincrement())
+  STTTM          Int?
+  ENDTM          Int?
+  t_holschtmprds t_holschtmprds[]
+  t_schdltmprds  t_schdltmprds[]
+}
+
+model t_trgact {
+  DEVID                          Int
+  IDX                            String    @db.Char(20)
+  INPDEVID                       Int?
+  INPTYP                         Int?
+  INPPT                          Int?
+  INPSWT                         String?   @db.Char(1)
+  INPDRTMS                       Int?
+  INPSCHUID                      Int?
+  INPEVT                         Int?
+  OUPDEVID                       Int?
+  OUPSIGUID                      Int?
+  OUPPT                          Int?
+  OUPFNCMSK                      Int?
+  OUPPRIO                        Int?
+  OUPTYP                         Int?
+  DLY                            Int?
+  SNDIDX                         Int?
+  STPFLG                         Int?
+  LEDCLR                         Int?
+  SNDCNT                         Int?
+  t_dev_t_trgact_DEVIDTot_dev    t_dev     @relation("t_trgact_DEVIDTot_dev", fields: [DEVID], references: [DEVID], onUpdate: Restrict, map: "R_DEVHSTRGACT")
+  t_sch                          t_sch?    @relation(fields: [INPSCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_DEVINPHSSCH")
+  t_evttyp                       t_evttyp? @relation(fields: [INPEVT], references: [EVT], onDelete: NoAction, onUpdate: NoAction, map: "R_TRGACTHAVEEVTTYP")
+  t_dev_t_trgact_OUPDEVIDTot_dev t_dev?    @relation("t_trgact_OUPDEVIDTot_dev", fields: [OUPDEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_TRGACTHSDEVFOROUP")
+  t_dev_t_trgact_INPDEVIDTot_dev t_dev?    @relation("t_trgact_INPDEVIDTot_dev", fields: [INPDEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_TRIGGERACTHSDEVFORINP")
+  t_oupsig                       t_oupsig? @relation(fields: [OUPSIGUID], references: [OUPSIGUID], onDelete: NoAction, onUpdate: NoAction, map: "R_TRIGGERACTHSOUPSIG")
+
+  @@id([IDX, DEVID])
+  @@unique([INPEVT, DEVID, INPPT, INPDEVID], map: "UNIACTION")
+  @@index([INPSCHUID], map: "R_DEVINPHSSCH")
+  @@index([OUPDEVID], map: "R_TRGACTHSDEVFOROUP")
+  @@index([INPDEVID], map: "R_TRIGGERACTHSDEVFORINP")
+  @@index([OUPSIGUID], map: "R_TRIGGERACTHSOUPSIG")
+  @@index([DEVID], map: "T_TRGACT_IX_64940015")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_usersent {
+  DEVICEID_USERID String? @db.Char(50)
+  ACSGRID         Int?
+
+  @@ignore
+}
+
+model t_usr {
+  USRUID                          Int              @id @default(autoincrement())
+  USRID                           String?          @unique(map: "CUSTOM_ID") @db.VarChar(128)
+  NM                              String?          @db.VarChar(255)
+  GEN                             String?          @db.Char(1)
+  TIT                             String?          @db.VarChar(32)
+  PH                              String?          @db.VarChar(128)
+  EML                             String?          @db.VarChar(255)
+  BTH                             DateTime?        @db.DateTime(0)
+  PIN                             String?          @db.Char(64)
+  LGNID                           String?          @unique(map: "LOGIN_ID") @db.VarChar(128)
+  PW                              String?          @db.Char(64)
+  STTDT                           DateTime?        @db.DateTime(0)
+  EXPDT                           DateTime?        @db.DateTime(0)
+  SECLVL                          String?          @default(dbgenerated("(0)")) @db.Char(1)
+  DISDRT                          Int?
+  DISCNT                          Int?
+  DISMSG                          String?          @db.VarChar(64)
+  DSBDUSR                         String?          @default(dbgenerated("(N)")) @db.Char(1)
+  IHR                             String?          @db.Char(1)
+  USATHPHT                        String?          @db.Char(1)
+  DEL                             String?          @default(dbgenerated("(N)")) @db.Char(1)
+  DELDT                           DateTime?        @db.DateTime(0)
+  DELUSRID                        String?          @db.VarChar(128)
+  USRGRUID                        Int?
+  ISUSRGR                         String?          @default(dbgenerated("(N)")) @db.Char(1)
+  LSTMOD                          Int?
+  MODFLG                          String?          @db.Char(1)
+  PERMUID                         Int?
+  LSTMODDT                        DateTime?        @db.DateTime(0)
+  UDTCNT                          Int?             @default(0)
+  PWSTA                           Int              @default(0)
+  PWTKN                           String?          @db.Char(64)
+  LSTPWMODDT                      DateTime?        @db.DateTime(0)
+  LSTLOGINFAILEDDT                DateTime?        @db.DateTime(0)
+  LOGINFAILEDCNT                  Int?
+  PWMODCNT                        Int?
+  PREVPW1                         String?          @db.Char(64)
+  PREVPW2                         String?          @db.Char(64)
+  PREVPW3                         String?          @db.Char(64)
+  IDXUSRID                        Int?             @default(0) @db.UnsignedInt
+  IDXUSRIDNUM                     Int?             @default(0) @db.UnsignedInt
+  IDXNM                           Int?             @default(0) @db.UnsignedInt
+  IDXPH                           Int?             @default(0) @db.UnsignedInt
+  IDXEML                          Int?             @default(0) @db.UnsignedInt
+  IDXLSTMOD                       Int?
+  USRIDORD                        String?          @db.VarChar(128)
+  CREATEDT                        DateTime?        @default(now()) @db.DateTime(0)
+  USERIP                          String?          @db.VarChar(32)
+  DEPARTMENT                      String?          @db.VarChar(512)
+  TITLE                           String?          @db.VarChar(512)
+  ADLGNID                         String?          @unique(map: "ADLOGIN_ID") @db.VarChar(128)
+  t_acsgruss                      t_acsgruss[]
+  t_adt                           t_adt[]
+  t_atmsyndevgrs                  t_atmsyndevgrs[]
+  t_atmsyndevs                    t_atmsyndevs[]
+  t_blkl                          t_blkl[]
+  t_crdisshis                     t_crdisshis[]
+  t_crdt                          t_crdt[]
+  t_devoprt                       t_devoprt[]
+  t_fctmpl                        t_fctmpl[]
+  t_fngptmpl                      t_fngptmpl[]
+  t_grmelvid                      t_grmelvid[]
+  t_mblcrd                        t_mblcrd[]
+  t_prf                           t_prf?
+  t_shfgruss                      t_shfgruss[]
+  t_usrgr_t_usr_USRGRUIDTot_usrgr t_usrgr?         @relation("t_usr_USRGRUIDTot_usrgr", fields: [USRGRUID], references: [USRGRUID], map: "R_USRIBTUSRGR")
+  t_usrcrd                        t_usrcrd[]
+  t_usrcusfld                     t_usrcusfld[]
+  t_usrgr_t_usrgr_USRGRUIDTot_usr t_usrgr?         @relation("t_usrgr_USRGRUIDTot_usr")
+  t_usroprmd                      t_usroprmd[]
+  t_usrphoto                      t_usrphoto?
+  t_zntrck                        t_zntrck[]
+
+  @@index([DEL], map: "IX_T_USR_DEL")
+  @@index([EML], map: "IX_T_USR_EML")
+  @@index([ISUSRGR, DEL], map: "IX_T_USR_ISONLYUSR")
+  @@index([USRGRUID, ISUSRGR, DEL], map: "IX_T_USR_ISONLYUSR_USRGRUID")
+  @@index([ISUSRGR], map: "IX_T_USR_ISUSRGR")
+  @@index([PERMUID], map: "PERMUIDIDX")
+  @@index([USRIDORD], map: "R_USRIDORD")
+  @@index([DEPARTMENT(length: 255)], map: "T_USR_DEPARTMENT_IDX")
+  @@index([IDXLSTMOD], map: "T_USR_IDXLSTMOD_IDX")
+  @@index([IDXUSRIDNUM], map: "T_USR_IDXUSRIDNUM_IDX")
+  @@index([IDXUSRID], map: "T_USR_IDXUSRID_IDX")
+  @@index([SECLVL, DELUSRID], map: "T_USR_IX_10130484")
+  @@index([ISUSRGR, DEL, USRGRUID], map: "T_USR_IX_1287919994")
+  @@index([ISUSRGR, DEL], map: "T_USR_IX_1537209303")
+  @@index([ISUSRGR, USRID], map: "T_USR_IX_1618194811")
+  @@index([SECLVL], map: "T_USR_IX_2442014288")
+  @@index([DEL, ISUSRGR, USRGRUID], map: "T_USR_IX_2481170470")
+  @@index([NM], map: "T_USR_IX_2526")
+  @@index([DEL, ISUSRGR], map: "T_USR_IX_2822627243")
+  @@index([DEL, ISUSRGR, USRUID], map: "T_USR_IX_4114755569")
+  @@index([USRGRUID, ISUSRGR], map: "T_USR_IX_6989285")
+  @@index([LSTMOD], map: "T_USR_LSTMOD_IDX")
+  @@index([PH], map: "T_USR_PH_IDX")
+  @@index([TITLE(length: 255)], map: "T_USR_TITLE_IDX")
+}
+
+model t_usr_phrase {
+  USRID  String @id @db.Char(128)
+  PHRASE String @db.VarChar(2048)
+}
+
+model t_usr_rep {
+  USRUID   Int     @id
+  USRGRUID Int?
+  ISUSRGR  String? @db.Char(1)
+  DEL      String? @db.Char(1)
+}
+
+model t_usrcrd {
+  USRUID  Int?
+  CRDUID  Int       @id
+  IDX     Int
+  ISSDDT  DateTime? @db.DateTime(0)
+  EXPDT   DateTime? @db.DateTime(0)
+  ISSDCNT Int?
+  CRDMSK  Int?
+  PRDSTDT DateTime? @db.DateTime(0)
+  PRDEDDT DateTime? @db.DateTime(0)
+  t_crd   t_crd     @relation(fields: [CRDUID], references: [CRDUID], onUpdate: Restrict, map: "R_CRDIATUSR")
+  t_usr   t_usr?    @relation(fields: [USRUID], references: [USRUID], onDelete: Restrict, onUpdate: Restrict, map: "R_USRHASUSRCRD")
+
+  @@index([USRUID], map: "T_USRCRD_IX_2512656987")
+  @@index([USRUID, IDX], map: "T_USRCRD_IX_583027618")
+  @@index([IDX], map: "T_USRCRD_IX_72380")
+}
+
+model t_usrcusfld {
+  USRUID      Int
+  VAL         String?     @db.VarChar(255)
+  CUSFLDUID   Int
+  t_cusfldtyp t_cusfldtyp @relation(fields: [CUSFLDUID], references: [CUSFLDUID], onUpdate: Restrict, map: "R_CUSFLDTYPIBTUSRAAA")
+  t_usr       t_usr       @relation(fields: [USRUID], references: [USRUID], onDelete: Cascade, map: "R_USRHSUSRCUSFLDAAA")
+
+  @@id([USRUID, CUSFLDUID])
+  @@index([CUSFLDUID], map: "R_CUSFLDTYPIBTUSRAAA")
+}
+
+model t_usrgr {
+  USRGRUID                      Int        @id
+  ORD                           Int?
+  NM                            String?    @db.VarChar(48)
+  DSCR                          String?    @db.VarChar(2048)
+  DEP                           Int?
+  IHR                           String?    @db.Char(1)
+  PARENTUSRGRUID                Int?
+  AUTHGRUID                     Int?
+  t_usr_t_usr_USRGRUIDTot_usrgr t_usr[]    @relation("t_usr_USRGRUIDTot_usrgr")
+  t_authgrp                     t_authgrp? @relation(fields: [AUTHGRUID], references: [AUTHGRUID], onUpdate: NoAction, map: "FK_T_USRGRAUTHGRP")
+  t_usrgr                       t_usrgr?   @relation("t_usrgrTot_usrgr", fields: [PARENTUSRGRUID], references: [USRGRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_USRGRIBTUSRGR")
+  other_t_usrgr                 t_usrgr[]  @relation("t_usrgrTot_usrgr")
+  t_usr_t_usrgr_USRGRUIDTot_usr t_usr      @relation("t_usrgr_USRGRUIDTot_usr", fields: [USRGRUID], references: [USRUID], onUpdate: Restrict, map: "R_USRGRISAUSR")
+
+  @@index([AUTHGRUID], map: "FK_T_USRGRAUTHGRP")
+  @@index([PARENTUSRGRUID], map: "R_USRGRIBTUSRGR")
+}
+
+model t_usrgr_order {
+  USRGRUID        Int    @id
+  DEP             Int
+  ORDERINDEX      Int
+  TOTALUSERCOUNT  Int    @default(0)
+  TOTALUSRGRCOUNT Int    @default(1)
+  GROUPTREEINFO   String @db.VarChar(300)
+
+  @@index([ORDERINDEX], map: "ORDERINDEX")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_usrmsksyn {
+  USRUID Int?
+  MSK    Int?
+  VER    Int?
+
+  @@index([MSK], map: "T_USRMSKSYN_MSK_INDEX")
+  @@index([USRUID], map: "T_USRMSKSYN_USRUID_INDEX")
+  @@index([VER], map: "T_USRMSKSYN_VER_INDEX")
+  @@ignore
+}
+
+model t_usroprmd {
+  USRUID Int
+  IDX    Int
+  OPRMTH Int
+  OPRMD  Int?
+  EXC    String? @default(dbgenerated("(N)")) @db.Char(1)
+  t_usr  t_usr   @relation(fields: [USRUID], references: [USRUID], onUpdate: Restrict, map: "R_USRHSUSROPRMD")
+
+  @@id([OPRMTH, IDX, USRUID])
+  @@index([USRUID], map: "R_USRHSUSROPRMD")
+}
+
+model t_usrphoto {
+  USRUID Int     @id
+  FLNM   String? @db.VarChar(255)
+  MIMTYP String  @db.VarChar(4)
+  IMG    Bytes
+  CHS    String  @db.VarChar(40)
+  t_usr  t_usr   @relation(fields: [USRUID], references: [USRUID], onUpdate: Restrict, map: "R_USRHSUSRPHOTO")
+}
+
+model t_vipphbks {
+  DEVID Int
+  IDX   Int
+  PHNUM String? @db.VarChar(128)
+  DSCR  String? @db.VarChar(2048)
+  t_dev t_dev   @relation(fields: [DEVID], references: [DEVID], onUpdate: Restrict, map: "R_RELATIONSHIP15")
+
+  @@id([DEVID, IDX])
+}
+
+model t_visit {
+  VISITUID        Int               @id @default(autoincrement())
+  USRID           String?           @db.VarChar(128)
+  NM              String?           @db.VarChar(255)
+  PH              String?           @db.VarChar(128)
+  HSTNM           String?           @db.VarChar(255)
+  HSTPH           String?           @db.VarChar(128)
+  STTDT           DateTime?         @db.DateTime(0)
+  EXPDT           DateTime?         @db.DateTime(0)
+  CHKINDT         DateTime?         @db.DateTime(0)
+  AGSTTDT         DateTime?         @db.DateTime(0)
+  AGEXPDT         DateTime?         @db.DateTime(0)
+  CREDT           DateTime          @default(now()) @db.DateTime(0)
+  STATUS          Int
+  TERMSVER        Int?
+  REQCRD          String?           @default(dbgenerated("(N)")) @db.Char(1)
+  DEL             String?           @default(dbgenerated("(N)")) @db.Char(1)
+  IDXNM           Int?              @default(0) @db.UnsignedInt
+  IDXPH           Int?              @default(0) @db.UnsignedInt
+  IDXHSTNM        Int?              @default(0) @db.UnsignedInt
+  IDXHSTPH        Int?              @default(0) @db.UnsignedInt
+  t_visitacsgrmap t_visitacsgrmap[] @ignore
+  t_visitcusfld   t_visitcusfld[]
+
+  @@index([AGEXPDT], map: "AGEXPDT")
+  @@index([CREDT], map: "CREDT")
+  @@index([DEL], map: "DEL")
+  @@index([EXPDT], map: "EXPDT")
+  @@index([NM, PH], map: "NM_PH")
+  @@index([STATUS], map: "STATUS")
+  @@index([STTDT], map: "STTDT")
+  @@index([NM, PH, DEL], map: "T_VISIT_IX_2574161")
+  @@index([STATUS, NM, PH, CREDT, DEL], map: "T_VISIT_IX_2832961871")
+  @@index([STATUS, NM, PH, DEL], map: "T_VISIT_IX_719800641")
+  @@index([NM, PH], map: "T_VISIT_IX_80858")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_visitacsgrmap {
+  VISITUID Int?
+  ACSGRUID Int
+  t_acsgr  t_acsgr  @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: Cascade, map: "FK_t_visitoracsgr_T_ACSGR")
+  t_visit  t_visit? @relation(fields: [VISITUID], references: [VISITUID], onDelete: Cascade, map: "FK_t_visitoracsgr_t_visit")
+
+  @@index([ACSGRUID], map: "FK_t_visitoracsgr_T_ACSGR")
+  @@index([VISITUID], map: "FK_t_visitoracsgr_t_visit")
+  @@ignore
+}
+
+model t_visitcusfld {
+  VSTUID          Int
+  VAL             String?         @db.VarChar(255)
+  CUSFLD_UID      Int
+  t_cusfldtyp_vst t_cusfldtyp_vst @relation(fields: [CUSFLD_UID], references: [CUSFLDUID], onDelete: Cascade, map: "t_visitcusfld_ibfk_1")
+  t_visit         t_visit         @relation(fields: [VSTUID], references: [VISITUID], onDelete: Cascade, map: "t_visitcusfld_ibfk_2")
+
+  @@id([VSTUID, CUSFLD_UID])
+  @@index([CUSFLD_UID], map: "R_CUSFLDTYPIBTUSRAAA")
+}
+
+model t_visitfngptmpl {
+  FNGPUID Int     @id @default(autoincrement())
+  NM      String? @db.VarChar(255)
+  PH      String? @db.VarChar(128)
+  FNGPIDX Int
+  DUR     String? @db.Char(1)
+  TMPL0   String? @db.VarChar(1024)
+  TMPL1   String? @db.VarChar(1024)
+  CHS     String? @db.VarChar(40)
+  LSTMOD  String? @db.Char(40)
+
+  @@index([NM, PH], map: "NM_PH")
+  @@index([LSTMOD], map: "T_VISITFNGPTMPL_LSTMOD_INDEX")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_visitfngptmplver {
+  LSTMOD Decimal @db.Decimal(38, 0)
+
+  @@ignore
+}
+
+model t_visitorterminal {
+  VSTTMLUID                  Int                          @id @default(autoincrement())
+  NM                         String                       @db.VarChar(48)
+  FNGDEVID                   Int?
+  CRDDEVID                   Int?
+  DSCR                       String?                      @db.VarChar(2048)
+  t_dev                      t_dev?                       @relation(fields: [FNGDEVID], references: [DEVID], onDelete: Cascade, map: "FK_t_visitorterminal_t_dev")
+  t_visitorterminalregionmap t_visitorterminalregionmap[] @ignore
+
+  @@index([FNGDEVID], map: "FK_t_visitorterminal_t_dev")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_visitorterminalacgroupmap {
+  ACSGRUID                Int
+  VSTREGIONUID            Int?
+  t_acsgr                 t_acsgr                  @relation(fields: [ACSGRUID], references: [ACSGRUID], onDelete: Cascade, map: "FK_t_visitorterminalacgroupmap_T_ACSGR")
+  t_visitorterminalregion t_visitorterminalregion? @relation(fields: [VSTREGIONUID], references: [VSTREGIONUID], onDelete: Cascade, map: "FK_t_visitorterminalacgroupmap_t_visitorterminalregion")
+
+  @@index([ACSGRUID], map: "FK_t_visitorterminalacgroup_T_ACSGR")
+  @@index([VSTREGIONUID], map: "FK_t_visitorterminalacgroup_t_visitorterminal")
+  @@ignore
+}
+
+model t_visitorterminalregion {
+  VSTREGIONUID                Int                           @id @default(autoincrement())
+  NM                          String                        @db.VarChar(48)
+  CRDTYPUID                   Int?
+  WGDFMUID                    Int?
+  t_visitorterminalacgroupmap t_visitorterminalacgroupmap[] @ignore
+  t_visitorterminalregionmap  t_visitorterminalregionmap[]  @ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_visitorterminalregionmap {
+  VSTTMLUID               Int?
+  VSTREGIONUID            Int?
+  t_visitorterminal       t_visitorterminal?       @relation(fields: [VSTTMLUID], references: [VSTTMLUID], onDelete: Cascade, map: "FK_t_visitorterminalregionmap_t_visitorterminal")
+  t_visitorterminalregion t_visitorterminalregion? @relation(fields: [VSTREGIONUID], references: [VSTREGIONUID], onDelete: Cascade, map: "FK_t_visitorterminalregionmap_t_visitorterminalregion")
+
+  @@index([VSTTMLUID], map: "FK_t_visitorterminalregion_t_visitorterminal")
+  @@index([VSTREGIONUID], map: "FK_t_visitorterminalregion_t_visitorterminalregion")
+  @@ignore
+}
+
+model t_visitorterms {
+  VSTTERMSUID           Int     @id @default(autoincrement())
+  ACSTERMS              String? @db.Text
+  ACSTERMSACONFIRM      String? @db.VarChar(512)
+  PRIVACYPOLICY         String? @db.Text
+  PRIVACYPOLICYCONFIRM  String? @db.VarChar(512)
+  GUIDEAFTERREGISTER    String? @db.Text
+  DEFAULTACTIVATEPERIOD Int?
+  PERIODNOTUSED         Int?
+  PERIODKEEPSENSITIVE   Int?
+}
+
+model t_wgdbz {
+  DEVID                         Int    @id
+  OUPDEVID                      Int?
+  BZCNT                         Int?
+  OUPIDX                        Int?
+  ONDRT1                        Int?
+  OFFDRT1                       Int?
+  ONDRT2                        Int?
+  OFFDRT2                       Int?
+  ONDRT3                        Int?
+  OFFDRT3                       Int?
+  t_dev_t_wgdbz_OUPDEVIDTot_dev t_dev? @relation("t_wgdbz_OUPDEVIDTot_dev", fields: [OUPDEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_WGDBZHSOUPDEV")
+  t_dev_t_wgdbz_DEVIDTot_dev    t_dev  @relation("t_wgdbz_DEVIDTot_dev", fields: [DEVID], references: [DEVID], onUpdate: Restrict, map: "R_WGDDEIVCEHSWGDBZ")
+
+  @@index([OUPDEVID], map: "R_WGDBZHSOUPDEV")
+}
+
+model t_wgdfmt {
+  WGDFMUID Int        @id @default(autoincrement())
+  NM       String?    @db.VarChar(48)
+  DSCR     String?    @db.VarChar(2048)
+  LEN      Int?
+  IDFLDS   String?    @db.Char(255)
+  PRTFLDS  String?    @db.Char(255)
+  PRTTYP1  Int?
+  PRTTYP2  Int?
+  PRTTYP3  Int?
+  PRTTYP4  Int?
+  PRTPOS1  Int?
+  PRTPOS2  Int?
+  PRTPOS3  Int?
+  PRTPOS4  Int?
+  ENBFCCD  String?    @default(dbgenerated("(N)")) @db.Char(1)
+  t_crd    t_crd[]
+  t_devwgd t_devwgd[]
+}
+
+model t_wgdled {
+  DEVID                          Int
+  STA                            Int
+  OUPIDX                         Int?
+  DRT                            Int?
+  OUPDEVID                       Int?
+  t_dev_t_wgdled_DEVIDTot_dev    t_dev  @relation("t_wgdled_DEVIDTot_dev", fields: [DEVID], references: [DEVID], onUpdate: Restrict, map: "R_WGDDEVHSWGDLED")
+  t_dev_t_wgdled_OUPDEVIDTot_dev t_dev? @relation("t_wgdled_OUPDEVIDTot_dev", fields: [OUPDEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_WGDLEDHSOUPDEV")
+
+  @@id([DEVID, STA])
+  @@index([OUPDEVID], map: "R_WGDLEDHSOUPDEV")
+}
+
+model t_wgdtmpr {
+  DEVID                           Int    @id
+  INPIDX                          Int?
+  SWTTYP                          Int?
+  INPDEVID                        Int?
+  t_dev_t_wgdtmpr_DEVIDTot_dev    t_dev  @relation("t_wgdtmpr_DEVIDTot_dev", fields: [DEVID], references: [DEVID], onUpdate: Restrict, map: "R_WGDDEVHSWGDTMP")
+  t_dev_t_wgdtmpr_INPDEVIDTot_dev t_dev? @relation("t_wgdtmpr_INPDEVIDTot_dev", fields: [INPDEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_WGDTMPHSINPDEV")
+
+  @@index([INPDEVID], map: "R_WGDTMPHSINPDEV")
+}
+
+model t_zn {
+  ZNUID              Int                  @id @default(autoincrement())
+  NM                 String?              @db.VarChar(48)
+  DSCR               String?              @db.VarChar(2048)
+  TYP                Int?
+  ISGLB              String?              @db.Char(1)
+  LSTUDT             Int?
+  DEL                String?              @db.Char(1)
+  DELDT              DateTime?            @db.DateTime(0)
+  STA                Int?
+  ENB                String?              @db.Char(1)
+  t_drzn             t_drzn[]
+  t_etrdevs          t_etrdevs[]
+  t_exdevs           t_exdevs[]
+  t_occpbpacgr       t_occpbpacgr[]
+  t_rmjbzn           t_rmjbzn[]
+  t_tmapbbpacgr      t_tmapbbpacgr[]
+  t_znacsgr          t_znacsgr[]
+  t_znapb            t_znapb?
+  t_zncrd            t_zncrd[]
+  t_zndr             t_zndr[]
+  t_znelvt           t_znelvt[]
+  t_znfal            t_znfal?
+  t_znflk            t_znflk?
+  t_znful            t_znful?
+  t_zninp            t_zninp[]            @ignore
+  t_znital           t_znital?
+  t_znlul            t_znlul?
+  t_znmst            t_znmst?
+  t_znoccp           t_znoccp?
+  t_znoccp_lstusrevt t_znoccp_lstusrevt[]
+  t_zntapb           t_zntapb?
+  t_zntmapb          t_zntmapb?
+  t_zntrck           t_zntrck[]
+  t_zntrgact         t_zntrgact[]         @ignore
+
+  @@index([DEL], map: "T_ZN_DEL_INDEX")
+  @@index([LSTUDT], map: "T_ZN_LSTUDT_INDEX")
+}
+
+model t_znacsgr {
+  ZNUID    Int
+  ACSGRUID Int
+  t_acsgr  t_acsgr @relation(fields: [ACSGRUID], references: [ACSGRUID], onUpdate: Restrict, map: "R_ACSGRIATZN")
+  t_zn     t_zn    @relation(fields: [ZNUID], references: [ZNUID], onUpdate: Restrict, map: "R_ZNHASZNACSGR")
+
+  @@id([ZNUID, ACSGRUID])
+  @@index([ACSGRUID], map: "R_ACSGRIATZN")
+}
+
+model t_znapb {
+  ZNUID        Int            @id
+  APBRUL       String?        @db.Char(1)
+  OPWHNDSCN    String?        @db.Char(1)
+  RESTM        Int?
+  APBFAACT     String?        @default(dbgenerated("(N)")) @db.Char(1)
+  APBUSESNS    String?        @db.Char(1)
+  t_apbbpacgr  t_apbbpacgr[]
+  t_zn         t_zn           @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNAPBISAZN")
+  t_znapbusrio t_znapbusrio[] @ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_znapbusrio {
+  ZNUID    Int?
+  USRID    String?   @db.VarChar(128)
+  STA      String?   @db.Char(1)
+  LSTMODDT DateTime? @db.DateTime(0)
+  t_znapb  t_znapb?  @relation(fields: [ZNUID], references: [ZNUID], onDelete: Restrict, onUpdate: Restrict, map: "R_ZNAPBHAVEUSRIO")
+
+  @@index([ZNUID], map: "R_ZNAPBHAVEUSRIO")
+  @@ignore
+}
+
+model t_zncrd {
+  ZNUID  Int
+  CRDUID Int
+  t_crd  t_crd @relation(fields: [CRDUID], references: [CRDUID], onDelete: NoAction, onUpdate: NoAction, map: "R_CRDIATZN")
+  t_zn   t_zn  @relation(fields: [ZNUID], references: [ZNUID], onUpdate: Restrict, map: "R_ZNHASZNCRD")
+
+  @@id([ZNUID, CRDUID])
+  @@index([CRDUID], map: "R_CRDIATZN")
+}
+
+model t_zndr {
+  ZNUID Int
+  DRUID Int
+  t_dr  t_dr @relation(fields: [DRUID], references: [DRUID], onUpdate: Restrict, map: "R_DRIATZN")
+  t_zn  t_zn @relation(fields: [ZNUID], references: [ZNUID], onUpdate: Restrict, map: "R_ZNHASZNDR")
+
+  @@id([ZNUID, DRUID])
+  @@index([DRUID], map: "R_DRIATZN")
+}
+
+model t_znelvt {
+  ZNUID   Int
+  ELVTUID Int
+  t_elvt  t_elvt @relation(fields: [ELVTUID], references: [ELVTUID], onUpdate: Restrict, map: "R_ELVTIATZN")
+  t_zn    t_zn   @relation(fields: [ZNUID], references: [ZNUID], onUpdate: Restrict, map: "R_ZNHASZNELVT")
+
+  @@id([ZNUID, ELVTUID])
+  @@index([ELVTUID], map: "R_ELVTIATZN")
+}
+
+model t_znfal {
+  ZNUID         Int             @id
+  ALMUID        Int?
+  INPDEVUID     Int?
+  INPIDX        Int?
+  t_faldrgrs    t_faldrgrs[]
+  t_faldrs      t_faldrs[]
+  t_falelvts    t_falelvts[]
+  t_dev         t_dev?          @relation(fields: [INPDEVUID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_DEVIBTZNFAL")
+  t_almact      t_almact?       @relation(fields: [ALMUID], references: [ALMUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFALHSALM")
+  t_zn          t_zn            @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFALISAZN")
+  t_znfalinpsns t_znfalinpsns[]
+
+  @@index([INPDEVUID], map: "R_DEVIBTZNFAL")
+  @@index([ALMUID], map: "R_ZNFALHSALM")
+}
+
+model t_znfalinpsns {
+  ZNUID    Int
+  INPDEVID Int
+  INPIDX   Int
+  SWTTYP   Int?
+  DRT      Int?
+  t_znfal  t_znfal @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFALHSZNFALINPSNS")
+
+  @@id([ZNUID, INPDEVID, INPIDX])
+}
+
+model t_znflk {
+  ZNUID       Int           @id
+  LCKSCHUID   Int?
+  BDRTLK      String?       @db.Char(1)
+  t_flkbpacgr t_flkbpacgr[]
+  t_flkdrgrs  t_flkdrgrs[]
+  t_flkdrs    t_flkdrs[]
+  t_flkelvts  t_flkelvts[]
+  t_sch       t_sch?        @relation(fields: [LCKSCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFLKHSSCHALS")
+  t_zn        t_zn          @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFLKISAZN")
+
+  @@index([LCKSCHUID], map: "R_ZNFLKHSSCHALS")
+}
+
+model t_znflrs {
+  ZNUID  Int
+  FLRUID Int
+
+  @@id([ZNUID, FLRUID])
+}
+
+model t_znful {
+  ZNUID      Int          @id
+  ULSCHUID   Int?
+  ULAFTATH   String?      @db.Char(1)
+  t_fulacgrs t_fulacgrs[]
+  t_fuldrgrs t_fuldrgrs[]
+  t_fuldrs   t_fuldrs[]
+  t_sch      t_sch?       @relation(fields: [ULSCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFLKHSSCHAUS")
+  t_zn       t_zn         @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNFULISAZN")
+
+  @@index([ULSCHUID], map: "R_ZNFLKHSSCHAUS")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_zninp {
+  ZNUID     Int
+  INPDEVUID Int
+  ARMTYP    Int
+  INPTYP    Int?
+  INPIDX    Int?
+  SWTTYP    Int?
+  DRT       Int?
+  t_zn      t_zn @relation(fields: [ZNUID], references: [ZNUID], onUpdate: Restrict, map: "R_ZNHASZNINP")
+
+  @@index([ZNUID], map: "R_ZNHASZNINP")
+  @@ignore
+}
+
+model t_znital {
+  ZNUID     Int  @id
+  ARMDLY    Int  @default(0) @db.UnsignedInt
+  DISARMDLY Int  @default(0) @db.UnsignedInt
+  t_zn      t_zn @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNITALISAZN")
+}
+
+model t_znlul {
+  ZNUID      Int          @id
+  ULSCHUID   Int?
+  ULAFTATH   String?      @db.Char(1)
+  t_fulelvts t_fulelvts[]
+  t_lulacgrs t_lulacgrs[]
+  t_sch      t_sch?       @relation(fields: [ULSCHUID], references: [SCHUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNLLKHSSCHAUS")
+  t_zn       t_zn         @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNLULISAZN")
+
+  @@index([ULSCHUID], map: "R_ZNFLKHSSCHAUS")
+}
+
+model t_znmst {
+  ZNUID Int  @id
+  TLMT  Int  @default(0) @db.UnsignedInt
+  t_zn  t_zn @relation(fields: [ZNUID], references: [ZNUID], onUpdate: Restrict, map: "R_ZNMSTISAZN")
+}
+
+model t_znoccp {
+  ZNUID                           Int       @id
+  LIMIT_COUNT                     Int       @default(0) @db.UnsignedInt
+  CURRENT_COUNT                   Int       @default(0)
+  BYPASS_COUNT                    Int       @default(0)
+  ACTION_IN_NETWORK_FAIL          Int       @default(0) @db.UnsignedInt
+  ALERT_SETTING_LEVEL             Int       @default(0) @db.UnsignedInt
+  ALERT_SETTING_STEP_1_VALUE      Int       @default(0) @db.UnsignedInt
+  ALERT_SETTING_STEP_2_VALUE      Int       @default(0) @db.UnsignedInt
+  REPEAT_AUTH_IGNORE_IS_ENABLED   Int       @default(0) @db.UnsignedInt
+  REPEAT_AUTH_IGNORE_SECOND_VALUE Int       @default(0) @db.UnsignedInt
+  AUTO_RESET_IS_ENABLED           Int       @default(0) @db.UnsignedInt
+  AUTO_RESET_MINUTE_VALUE         Int       @default(0) @db.UnsignedInt
+  LAST_UPDATE_DATE                DateTime? @db.DateTime(0)
+  t_zn                            t_zn      @relation(fields: [ZNUID], references: [ZNUID], onDelete: Cascade, map: "R_ZHHASZNOCCP")
+}
+
+model t_znoccp_lstusrevt {
+  ZNUID            Int
+  USRID            String    @db.VarChar(128)
+  INOUT_STA        Int
+  PREV_INOUT_STA   Int
+  INOUT_ERROR      Int       @default(0)
+  LAST_UPDATE_DATE DateTime? @db.DateTime(0)
+  t_zn             t_zn      @relation(fields: [ZNUID], references: [ZNUID], onDelete: Cascade, map: "R_ZNHASLSTUSREVT")
+
+  @@id([ZNUID, USRID])
+}
+
+model t_zntapb {
+  ZNUID       Int       @id
+  ALMUID      Int?
+  TIMEDAPBDRT Int?
+  t_almact    t_almact? @relation(fields: [ALMUID], references: [ALMUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ALMIBTZNTAPB")
+  t_zn        t_zn      @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNTAPBISAZN")
+
+  @@index([ALMUID], map: "R_ALMIBTZNTAPB")
+}
+
+model t_zntmapb {
+  ZNUID      Int      @id
+  TMAPBRUL   String?  @db.Char(1)
+  OPWHNDSCN  String?  @db.Char(1)
+  RESTM      Int?
+  TMAPBFAACT String?  @default(dbgenerated("(N)")) @db.Char(1)
+  SELDEV     Boolean? @default(false)
+  t_zn       t_zn     @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNTMAPBISAZN")
+}
+
+model t_zntrck {
+  ZNUID         Int
+  USRUID        Int
+  ENT           Int?
+  EXT           Int?
+  STA           Int?  @default(0)
+  IS_DST_EN     Int?
+  TMZN_HALF_EN  Int?
+  TMZN_HOUR_EN  Int?
+  TMZN_NEGTV_EN Int?
+  IS_DST_EX     Int?
+  TMZN_HALF_EX  Int?
+  TMZN_HOUR_EX  Int?
+  TMZN_NEGTV_EX Int?
+  t_usr         t_usr @relation(fields: [USRUID], references: [USRUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNTRCKHSUSR")
+  t_zn          t_zn  @relation(fields: [ZNUID], references: [ZNUID], onUpdate: Restrict, map: "R_ZNTRCKHSZN")
+
+  @@id([ZNUID, USRUID])
+  @@index([USRUID], map: "R_ZNTRCKHSUSR")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model t_zntrgact {
+  ZNUID     Int
+  INPEVT    Int?
+  OUPDEVID  Int?
+  OUPSIGUID Int?
+  OUPPT     Int?
+  OUPFNCMSK Int?
+  OUPPRIO   Int?
+  OUPTYP    Int?
+  SNDIDX    Int?
+  SNDCNT    Int?
+  BUZVOL    Int?
+  t_zn      t_zn      @relation(fields: [ZNUID], references: [ZNUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNCANHVZNTIRGGERACT")
+  t_dev     t_dev?    @relation(fields: [OUPDEVID], references: [DEVID], onDelete: Restrict, onUpdate: Restrict, map: "R_ZNTRGACTCANHAVEOUPDEV")
+  t_oupsig  t_oupsig? @relation(fields: [OUPSIGUID], references: [OUPSIGUID], onDelete: NoAction, onUpdate: NoAction, map: "R_ZNTRGACTCANHAVEOUPSIG")
+
+  @@index([ZNUID], map: "R_ZNCANHVZNTIRGGERACT")
+  @@index([OUPDEVID], map: "R_ZNTRGACTCANHAVEOUPDEV")
+  @@index([OUPSIGUID], map: "R_ZNTRGACTCANHAVEOUPSIG")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model temp_acsgrusr {
+  ACSGRUID Int
+  usruid   Int
+  usrid    String @db.VarChar(32)
+
+  @@index([ACSGRUID], map: "TEMP_ACSGRUSR_ACSGRUID")
+  @@index([usrid], map: "TEMP_ACSGRUSR_USRID")
+  @@index([usruid], map: "TEMP_ACSGRUSR_USRUID")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model temp_doubleauthusr {
+  RELDEVIDX Int
+  USRID     String @db.VarChar(32)
+  ACSGRUID  Int
+
+  @@index([ACSGRUID], map: "TEMP_DOUBLEAUTHUSR_ACSGRUID")
+  @@index([RELDEVIDX], map: "TEMP_DOUBLEAUTHUSR_RELDEVIDX")
+  @@index([USRID], map: "TEMP_DOUBLEAUTHUSR_USRID")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model temp_operator {
+  DEVUID Int
+  USRID  String @db.VarChar(32)
+
+  @@index([DEVUID], map: "TEMP_OPERATOR_DEVUID")
+  @@index([USRID], map: "TEMP_OPERATOR_USRID")
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model v_devices {
+  PARENTDEVID Int?
+  DEVGRUID    Int?
+  DEVGRNM     String? @db.VarChar(32)
+  DEVID       Int?
+  PATH        String? @db.VarChar(255)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model v_dr {
+  DRGRUID       Int?
+  DRUID         Int?
+  NM            String? @db.VarChar(48)
+  DSCR          String? @db.VarChar(64)
+  DEP           Int?
+  PARENTDRGRUID Int?
+  PARENTDRGRNM  String? @db.VarChar(48)
+  DEL           String? @db.Char(1)
+  ORD           Int?
+  PATH          String? @db.VarChar(512)
+  STA           Int?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model v_elvt {
+  ELVTGRUID       Int?
+  ELVTUID         Int?
+  NM              String? @db.VarChar(48)
+  DSCR            String? @db.VarChar(64)
+  DEP             Int?
+  PARENTELVTGRUID Int?
+  PARENTELVTGRNM  String? @db.VarChar(48)
+  DEL             String? @db.Char(1)
+  ORD             Int?
+  PATH            String? @db.VarChar(512)
+  STA             Int?
+
+  @@ignore
+}
+
+model widget {
+  id               Int                @id @default(autoincrement())
+  user_id          String             @db.VarChar(255)
+  name             String             @db.LongText
+  widget_base      String             @db.VarChar(255)
+  widget_type      String             @db.VarChar(255)
+  widget_value     String?            @db.LongText
+  chart_type       String?            @db.VarChar(255)
+  chart_color      String?            @db.VarChar(255)
+  created_date     DateTime           @default(now()) @db.DateTime(6)
+  updated_date     DateTime           @default(now()) @db.DateTime(6)
+  widget_area_id   Int?               @unique(map: "REL_widget_area_id")
+  widget_area      widget_area?       @relation(fields: [widget_area_id], references: [id], onDelete: Cascade, map: "FK_40d03f574f5a8271db012bbb63e")
+  widget_data_item widget_data_item[]
+}
+
+model widget_area {
+  id         Int     @id @default(autoincrement())
+  x_position Int
+  y_position Int
+  width      Int
+  height     Int
+  index      String  @db.VarChar(255)
+  widget     widget?
+}
+
+model widget_data_item {
+  id                 Int               @id @default(autoincrement())
+  name               String            @db.VarChar(255)
+  value              Int?
+  widget_id          Int?
+  report_template_id Int?
+  widget             widget?           @relation(fields: [widget_id], references: [id], onDelete: Cascade, map: "FK_829ecf49696edcf2c6d3991c96c")
+  report_templates   report_templates? @relation(fields: [report_template_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_9e75f21930911533b864feaa2b0")
+
+  @@index([widget_id], map: "FK_829ecf49696edcf2c6d3991c96c")
+  @@index([report_template_id], map: "FK_9e75f21930911533b864feaa2b0")
 }
